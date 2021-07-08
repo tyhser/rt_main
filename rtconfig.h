@@ -73,6 +73,12 @@
 
 /* Device virtual file system */
 
+#define RT_USING_DFS
+#define DFS_USING_WORKDIR
+#define DFS_FILESYSTEMS_MAX 2
+#define DFS_FILESYSTEM_TYPES_MAX 2
+#define DFS_FD_MAX 16
+#define RT_USING_DFS_DEVFS
 
 /* Device Drivers */
 
@@ -88,7 +94,9 @@
 
 /* POSIX layer and C standard library */
 
-#define RT_LIBC_USING_TIME
+#define RT_USING_LIBC
+#define RT_USING_POSIX
+#define RT_USING_POSIX_TERMIOS
 
 /* Network */
 
@@ -127,6 +135,12 @@
 
 /* IoT - internet of things */
 
+#define PKG_USING_LIBMODBUS
+#define PKG_USING_LIBMODBUS_RTU
+#define HAVE_DECL_TIOCSRS485 1
+#define HAVE_DECL_TIOCM_RTS 1
+#define PKG_USING_LIBMODBUS_LATEST_VERSION
+#define PKG_LIBMODBUS_VER_NUM 0x99999
 
 /* Wi-Fi */
 
@@ -185,6 +199,8 @@
 #define BSP_USING_GPIO
 #define BSP_USING_UART
 #define BSP_USING_UART1
+#define BSP_USING_UART3
+#define BSP_USING_UART6
 
 /* Board extended module Drivers */
 

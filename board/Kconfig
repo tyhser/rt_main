@@ -31,6 +31,24 @@ menu "On-chip Peripheral Drivers"
                 bool "Enable UART1 RX DMA"
                 depends on BSP_USING_UART1 && RT_SERIAL_USING_DMA
                 default n
+
+            config BSP_USING_UART3
+                bool "Enable UART3"
+                default y
+
+            config BSP_UART3_RX_USING_DMA
+                bool "Enable UART3 RX DMA"
+                depends on BSP_USING_UART3 && RT_SERIAL_USING_DMA
+                default n
+
+            config BSP_USING_UART6
+                bool "Enable UART6"
+                default y
+
+            config BSP_UART6_RX_USING_DMA
+                bool "Enable UART6 RX DMA"
+                depends on BSP_USING_UART6 && RT_SERIAL_USING_DMA
+                default n
         endif
         
     source "libraries/HAL_Drivers/Kconfig"
