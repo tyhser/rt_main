@@ -6,6 +6,8 @@ CPPPATH = [cwd, str(Dir('#'))]
 src     = Split("""
 main.c
 libmodbus_test.c
+app_modbus_slave.c
+modbus_event.c
 """)
 
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)

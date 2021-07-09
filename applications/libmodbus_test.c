@@ -4,10 +4,13 @@
 #include "string.h"
 
 #define RS485_RE GET_PIN(D, 10)
+#define TEST 1
 
 static void modbus_master_thread(void *param)
 {
+#if TEST
     uint16_t tab_reg[64] = {0};
+#endif
     modbus_t *ctx = RT_NULL;
     ctx = modbus_new_rtu("/dev/uart3", 115200, 'N', 8, 1);
     modbus_rtu_set_serial_mode(ctx, MODBUS_RTU_RS485);
@@ -16,6 +19,8 @@ static void modbus_master_thread(void *param)
     modbus_set_debug(ctx, 0);
     modbus_connect(ctx);
     modbus_set_response_timeout(ctx, 0, 1000000);
+
+#if TEST
     int num = 0;
     while (1)
     {
@@ -32,10 +37,8 @@ static void modbus_master_thread(void *param)
         rt_kprintf("\n");
         rt_thread_mdelay(30);
     }
-    //7-关闭modbus端口
+#endif
     modbus_close(ctx);
-
-    //8-释放modbus资源
     modbus_free(ctx);
 }
 
