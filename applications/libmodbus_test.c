@@ -1,4 +1,5 @@
-#include "modbus_rtu_test.h"
+#include <rtthread.h>
+#include <board.h>
 #include "modbus.h"
 #include "stdio.h"
 #include "string.h"
@@ -44,6 +45,7 @@ static void modbus_master_thread(void *param)
 
 static int rtu_test_init(void)
 {
+#ifndef APP_RS485_MOTOR_DRIVER
     rt_pin_mode(RS485_RE, PIN_MODE_OUTPUT);
     rt_thread_t tid;
     tid = rt_thread_create("modbus",
@@ -52,6 +54,9 @@ static int rtu_test_init(void)
                            12, 10);
     if (tid != RT_NULL)
         rt_thread_startup(tid);
+#else
+	(void)modbus_master_thread;
+#endif
     return RT_EOK;
 }
 INIT_APP_EXPORT(rtu_test_init);
