@@ -160,7 +160,7 @@
 #define RT_S_DI_RESERVE 0
 #define PKG_MODBUS_SLAVE_RTU
 #define RT_MODBUS_SLAVE_USE_CONTROL_PIN
-#define MODBUS_SLAVE_RT_CONTROL_PIN_INDEX 40
+#define MODBUS_SLAVE_RT_CONTROL_PIN_INDEX 10
 #define PKG_USING_FREEMODBUS_LATEST_VERSION
 
 /* Wi-Fi */
@@ -225,5 +225,10 @@
 
 /* Board extended module Drivers */
 
+/* Application Config */
+
+/* Communications Port Config */
+
+#define APP_RS485_MOTOR_DRIVER
 
 #endif

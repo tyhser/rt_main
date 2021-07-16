@@ -1,0 +1,11 @@
+menu "Application Config"
+
+menu "Communications Port Config"
+
+    config APP_RS485_MOTOR_DRIVER
+        bool "rs485 port for motor driver"
+        default y
+
+endmenu
+
+endmenu
