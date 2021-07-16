@@ -9,6 +9,7 @@
  */
 
 #include <rtthread.h>
+#include <string.h>
 
 #include "app_modbus_slave.h"
 
@@ -76,6 +77,8 @@ static void mb_slave_poll(void *parameter)
 void app_md_slave_init(void)
 {
 	rt_err_t result;
+
+	rt_memcpy(&REG_VERSION, GIT_DESC, strlen(GIT_DESC) + 1);
 
 	result = rt_mb_init(&modbus_ind_mailbox,
 			    "modbus_ind",
