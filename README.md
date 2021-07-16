@@ -1,20 +1,18 @@
-# BSP README 模板
+# BSP README
 
 ## 简介
 
-本文档为 xxx 开发板的 BSP (板级支持包) 说明。
+本文档为 主控板 开发板的 BSP (板级支持包) 说明。
 
 主要内容如下：
 
-- 开发板资源介绍
+- 主控板资源介绍
 - BSP 快速上手
-- 进阶使用方法
+- 使用方法
 
-通过阅读快速上手章节开发者可以快速地上手该 BSP，将 RT-Thread 运行在开发板上。在进阶使用指南章节，将会介绍更多高级功能，帮助开发者利用 RT-Thread 驱动更多板载资源。
+## 主控板介绍
 
-## 开发板介绍
-
-【此处简单介绍一下开发板】
+【此处简单介绍一下主控板】
 
 开发板外观如下图所示：
 
@@ -22,16 +20,13 @@
 
 该开发板常用 **板载资源** 如下：
 
-- MCU：STM32xxx，主频 xxxMHz，xxxKB FLASH ，xxxKB RAM
-- 外部 RAM：型号，xMB
-- 外部 FLASH：型号，xMB
+- MCU：STM32F407ZE，主频 168MHz，512KB FLASH ，192KB RAM
+- 外部 RAM：型号，0MB
+- 外部 FLASH：型号，0MB
 - 常用外设
-  - LED：x个，DS0（红色，PB1），DS1（绿色，PB0）
-  - 按键：x个，K0（兼具唤醒功能，PA0），K1（PC13）
-- 常用接口：USB 转串口、SD 卡接口、以太网接口、LCD 接口等
-- 调试接口，标准 JTAG/SWD
-
-开发板更多详细信息请参考【厂商名】 [xxx开发板介绍](https://xxx)。
+  - LED：1个，LED0（红色，PB14）
+- 接口：uart1 => log/Finsh, uart3 => motor driver, uart6 => modbus slave
+- 调试接口，标准 SWD
 
 ## 外设支持
 
@@ -39,16 +34,16 @@
 
 | **板载外设**      | **支持情况** | **备注**                              |
 | :----------------- | :----------: | :------------------------------------- |
-| USB 转串口        |     支持     |                                       |
-| SPI Flash         |     支持     |                                       |
-| 以太网            |     支持     |                                       |
+| USB 转串口        |   暂不支持     |                                       |
+| SPI Flash         |   暂不支持     |                                       |
+| 以太网            |   暂不支持     |                                       |
 | SD卡              |   暂不支持   |                                       |
 | CAN               |   暂不支持   |                                       |
 | **片上外设**      | **支持情况** | **备注**                              |
-| GPIO              |     支持     | PA0, PA1... PK15 ---> PIN: 0, 1...176 |
-| UART              |     支持     | UART1/x/x                             |
-| SPI               |     支持     | SPI1/x/x                              |
-| I2C               |     支持     | 软件 I2C                              |
+| GPIO              |   支持     | PA0, PA1... PK15 ---> PIN: 0, 1...176 |
+| UART              |   支持     | UART1/x/x                             |
+| SPI               |   暂不支持     | SPI1/x/x                              |
+| I2C               |   暂不支持     | 软件 I2C                              |
 | SDIO              |   暂不支持   | 即将支持                              |
 | RTC               |   暂不支持   | 即将支持                              |
 | PWM               |   暂不支持   | 即将支持                              |
@@ -121,4 +116,4 @@ msh >
 
 维护人:
 
--  [xxx](https://个人主页), 邮箱：<xxx@xxx.com>
+-  [Tai-JiaJun](https://https://gitee.com/J_Typhoon), 邮箱：<tyhser@hotmail.com>

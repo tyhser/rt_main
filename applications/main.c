@@ -13,6 +13,14 @@
 #include <board.h>
 #include "app_modbus_slave.h"
 
+#ifndef ULOG_USING_SYSLOG
+#define LOG_TAG              "main"
+#define LOG_LVL              LOG_LVL_DBG
+#include <ulog.h>
+#else
+#include <syslog.h>
+#endif /* ULOG_USING_SYSLOG */
+
 /* defined the LED0 pin: PB1 */
 #define LED0_PIN    GET_PIN(B, 14)
 
@@ -22,6 +30,7 @@ int main(void)
 	/* set LED0 pin mode to output */
 	rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
 	app_md_slave_init();
+	LOG_I(GIT_DESC);
 
 	while (count++)
 	{

@@ -1,6 +1,14 @@
 import os
 import sys
 import rtconfig
+from subprocess import *
+
+def getGitDesc():
+	return Popen('git describe --tags --always', stdout=PIPE, shell=True).stdout.read().strip()
+
+GIT_DESC = getGitDesc()
+GIT_DESC = GIT_DESC.decode("utf-8")
+print("Building " + str(getGitDesc()) + "..")
 
 if os.getenv('RTT_ROOT'):
     RTT_ROOT = os.getenv('RTT_ROOT')
@@ -34,6 +42,8 @@ if rtconfig.PLATFORM == 'iar':
     env.Replace(CCCOM = ['$CC $CCFLAGS $CPPFLAGS $_CPPDEFFLAGS $_CPPINCFLAGS -o $TARGET $SOURCES'])
     env.Replace(ARFLAGS = [''])
     env.Replace(LINKCOM = env["LINKCOM"] + ' --map rt-thread.map')
+
+env.Append (CPPDEFINES = { 'GIT_DESC' : ('\\"%s\\"' % GIT_DESC) } )
 
 Export('RTT_ROOT')
 Export('rtconfig')
