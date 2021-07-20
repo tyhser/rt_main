@@ -26,8 +26,7 @@ void md_event_init(void)
 		rt_kprintf("init message queue failed.\n");
 }
 
-int md_event_send(enum md_rw rw, enum md_reg_type reg_type, uint32_t start_addr,
-		  size_t reg_cnt)
+int md_event_send(enum md_rw rw, enum md_reg_type reg_type, uint32_t start_addr, size_t reg_cnt)
 {
 	int result = 0;
 	struct md_event msg = {
