@@ -34,6 +34,7 @@ int md_event_send(enum md_rw rw, enum md_reg_type reg_type, uint32_t start_addr,
 		.reg_type = reg_type,
 		.start_addr = start_addr,
 		.reg_cnt = reg_cnt,
+		.reg = reg,
 	};
 	result = rt_mq_send(&mq, &msg, sizeof(msg));
 	if (result != RT_EOK)
@@ -59,25 +60,50 @@ struct md_event *md_event_recv(void)
 
 void md_event_release_msg(struct md_event *msg)
 {
-	rt_free(msg);
+	if (msg != NULL)
+		rt_free(msg);
 }
 
 enum md_rw md_event_get_rw(struct md_event *msg)
 {
-	return msg->rw;
+	if (msg != NULL)
+		return msg->rw;
+	else
+		return MD_EVENT_REG_READ;
 }
 
-enum md_reg_type md_event_get_reg_type(struct md_event *msg)
+enum md_cmd_type md_event_get_cmd_type(struct md_event *msg)
 {
-	return msg->reg_type;
+	if (msg != NULL)
+		return msg->reg_type;
+	else
+		return MD_NONE;
 }
 
 uint32_t md_event_get_start_addr(struct md_event *msg)
 {
-	return msg->start_addr;
+	if (msg != NULL) {
+		return msg->start_addr;
+	} else {
+		LOG_E("msg is NULL");
+		return 0;
+	}
+}
+
+uint16_t *md_event_get_reg_pointer(struct md_event *msg)
+{
+	if (msg != NULL) {
+		return msg->reg;
+	} else {
+		LOG_E("msg is NULL");
+		return 0;
+	}
 }
 
 size_t md_event_get_reg_cnt(struct md_event *msg)
 {
-	return msg->reg_cnt;
+	if (msg != NULL)
+		return msg->reg_cnt;
+	else
+		return 0;
 }
