@@ -12,6 +12,7 @@
 #include <rtdevice.h>
 #include <board.h>
 #include "app_modbus_slave.h"
+#include "pmc005.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "main"
@@ -30,6 +31,7 @@ int main(void)
 	/* set LED0 pin mode to output */
 	rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
 	app_md_slave_init();
+	pmc_init();
 	LOG_I(GIT_DESC);
 
 	while (count++)

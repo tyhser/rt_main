@@ -7,6 +7,8 @@ src     = Split("""
 main.c
 app_modbus_slave.c
 modbus_event.c
+pmc005.c
+ntc_private.c
 """)
 
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)
