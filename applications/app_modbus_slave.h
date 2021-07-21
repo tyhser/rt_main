@@ -8,8 +8,21 @@
 extern "C" {
 #endif
 
+#if S_COIL_NCOILS%8
+extern UCHAR    ucSCoilBuf[S_COIL_NCOILS/8+1];
+#else
+extern UCHAR    ucSCoilBuf[S_COIL_NCOILS/8];
+#endif
 extern USHORT usSRegHoldBuf[S_REG_HOLDING_NREGS];
 extern USHORT usSRegInBuf[S_REG_INPUT_NREGS];
+
+/*
+ *	 0    16    80   180   279      (modbus reg map)
+ *	 |<16>|<64 >|<100>|<100>|               |
+ *	 +----+-----+-----+-----+---------------+
+ *	 |d-In|coil |RegIn|Hold |
+ *	 +----+-----+-----+-----+
+ */
 
 #define REG_VERSION     (usSRegInBuf[90])
 
