@@ -10,19 +10,13 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
-static struct rt_messagequeue mq;
-static rt_uint8_t msg_pool[2048];
+static rt_mq_t mq;
 
 void md_event_init(void)
 {
-	rt_err_t result;
+	mq = rt_mq_create("md_mqt", sizeof(struct md_event), 4096, RT_IPC_FLAG_FIFO);
 
-	result = rt_mq_init(&mq, "md_mqt",
-			    &msg_pool[0],
-			    sizeof(struct md_event),
-			    sizeof(msg_pool), RT_IPC_FLAG_FIFO);
-
-	if (result != RT_EOK)
+	if (mq == NULL)
 		rt_kprintf("init message queue failed.\n");
 }
 
@@ -37,7 +31,7 @@ int md_event_send(enum md_rw rw, enum md_cmd_type reg_type, uint32_t start_addr,
 		.reg_cnt = reg_cnt,
 		.reg = reg,
 	};
-	result = rt_mq_send(&mq, &msg, sizeof(msg));
+	result = rt_mq_send(mq, &msg, sizeof(msg));
 	if (result != RT_EOK)
 		LOG_E("md event send ERR");
 	return result;
@@ -52,7 +46,7 @@ struct md_event *md_event_recv(void)
 	if (!msg)
 		LOG_E("new md msg failed");
 
-	ret = rt_mq_recv(&mq, msg, sizeof(*msg), RT_WAITING_FOREVER);
+	ret = rt_mq_recv(mq, msg, sizeof(*msg), RT_WAITING_FOREVER);
 	if (ret == RT_EOK)
 		return msg;
 	else

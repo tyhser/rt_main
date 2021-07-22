@@ -2,7 +2,6 @@
 #include <rtdevice.h>
 #include <stdlib.h>
 #include <string.h>
-#include "electrode.h"
 #include "app_modbus_slave.h"
 #include "modbus_event.h"
 
@@ -28,21 +27,20 @@ enum control_cmd {
 	CMD_MOVING_PLANE,
 };
 
+extern void set_valve(int id, int val);
 extern struct rt_mailbox modbus_ind_mailbox;
 static struct rt_thread *event_thread;
 
-void reg_work_state_notify(void)
+void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 {
-	rt_enter_critical();
-	REG_WORK_STATE = 0;
-	rt_exit_critical();
-}
+	//LOG_HEX("coil", 16, reg, 64);
+	uint16_t reg_index = (uint16_t)(addr - 16) / 8;
+	uint16_t reg_bit_index = (uint16_t)(addr - 16) % 8;
 
-md_coil_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
-{
-	LOG_I("D");
 	for (int i = 0; i < cnt; i++) {
-		rt_kprintf("");
+		reg_index = (i + addr - 16) / 8;
+		reg_bit_index = (i + addr - 16) % 8;
+		set_valve(addr - 16 + i, (reg[reg_index] & (0x01 << reg_bit_index)) >> reg_bit_index);
 	}
 }
 
@@ -65,7 +63,7 @@ static void event_thread_entry(void *parameter)
 
 		switch (type) {
 		case MD_COIL:
-			md_coil_write_handle(addr, cnt, reg);
+			md_coil_write_handle(addr, cnt, (uint8_t *)reg);
 			break;
 		case MD_HOLDING_REG:
 			break;
@@ -76,22 +74,15 @@ static void event_thread_entry(void *parameter)
 	}
 }
 
-rt_err_t reactor_init(void)
+rt_err_t event_init(void)
 {
 	rt_err_t ret = RT_EOK;
 
-	ret = electrode_init();
-	if (!electrode_get_data(0))
-		ret = RT_ERROR;
-
-	rt_list_init(&reactor.raw_data_list);
-	reactor.state = READY;
-
-	reactor_thread = rt_thread_create("reactor",
-		       reactor_thread_entry,
-		       RT_NULL,
-		       3072,
-		       REACTOR_PRI, APP_THREAD_TIMESLICE);
-	rt_thread_startup(reactor_thread);
+	event_thread = rt_thread_create("event",
+			event_thread_entry,
+			RT_NULL,
+			3072,
+			15, 5);
+	rt_thread_startup(event_thread);
 	return ret;
 }
