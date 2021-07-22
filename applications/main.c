@@ -13,6 +13,7 @@
 #include <board.h>
 #include "app_modbus_slave.h"
 #include "pmc005.h"
+#include "modbus_event.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "main"
@@ -25,13 +26,19 @@
 /* defined the LED0 pin: PB1 */
 #define LED0_PIN    GET_PIN(B, 14)
 
+extern rt_err_t event_init(void);
+extern void valve_init(void);
+
 int main(void)
 {
 	int count = 1;
 	/* set LED0 pin mode to output */
 	rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
 	app_md_slave_init();
+	md_event_init();
+	event_init();
 	pmc_init();
+	valve_init();
 	LOG_I(GIT_DESC);
 
 	while (count++)
