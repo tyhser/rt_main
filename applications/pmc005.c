@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include "rs485.h"
+#include "pmc005.h"
+#include "app_modbus_slave.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "pmc"
@@ -19,11 +21,26 @@
 #define PMC_MODE_CONTROL_PIN 58
 #define PMC_LVL		1
 
-enum motor_id {
-	MOTOR_1,
-	MOTOR_2,
-	MOTOR_3,
-	MOTOR_4,
+extern uint16_t usSRegInBuf[S_REG_INPUT_NREGS];
+
+#define REG_XY_AXIS_STATE		(usSRegInBuf[0])
+#define REG_Z_AXIS_STATE		(usSRegInBuf[1])
+#define REG_SYRING_STATE		(usSRegInBuf[2])
+
+#define REG_PMC_STATE			(usSRegInBuf[3])
+
+#define PMC_BUSY	1
+#define PMC_FREE	0
+
+enum pmc_status {
+	PMC_OK				= 0,
+	PMC_INIT_ERROR			= 1,
+	PMC_INVAILD_CMD			= 2,
+	PMC_INVAILD_OPERATION_DATA	= 3,
+	PMC_COMMUNICATION_ERROR		= 5,
+	PMC_UNINIT			= 7,
+	PMC_OVERLOAD			= 9,
+	PMC_CMD_OVERFLOW		= 15
 };
 
 struct cmd_line_info {
@@ -99,7 +116,6 @@ void pmc_select_motor(enum motor_id id, int station_addr)
 	pmc_send_then_recv(cmd, strlen(cmd), recv, 128);
 }
 
-
 int pmc_motor_absolute_position(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 {
 	char cmd[25] = {0};
@@ -134,6 +150,118 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	return 0;
 }
 
+enum pmc_status get_pmc_status(char *recv, int len)
+{
+	if (len < 3) {
+		LOG_E("payload too short");
+		return 0;
+	}
+	return (*(recv + 2) & 0x0F);
+}
+
+void pmc_update_motor_state(char *recv, int len)
+{
+	if (len < 4) {
+		LOG_E("payload too short");
+		return;
+	}
+
+	rt_enter_critical();
+
+	if ((*(recv + 3) & 0x01) || (*(recv + 3) & 0x02))
+		REG_XY_AXIS_STATE = PMC_BUSY;
+	else
+		REG_XY_AXIS_STATE = PMC_FREE;
+	if (*(recv + 3) & 0x04)
+		REG_Z_AXIS_STATE = PMC_BUSY;
+	else
+		REG_Z_AXIS_STATE = PMC_FREE;
+	if (*(recv + 3) & 0x08)
+		REG_SYRING_STATE = PMC_BUSY;
+	else
+		REG_SYRING_STATE = PMC_FREE;
+
+	REG_PMC_STATE = get_pmc_status(recv, strlen(recv));
+
+	rt_exit_critical();
+}
+
+void pmc_stop(uint8_t station_addr)
+{
+	char cmd[128] = {0};
+	char recv[128] = {0};
+
+	cmd[0] = '/';
+	cmd[1] = get_hex_ch(station_addr);
+	cmd[2] = 'T';
+	cmd[3] = 'R';
+	cmd[4] = '\r';
+
+	pmc_send_then_recv(cmd, strlen(cmd), recv, 128);
+	REG_PMC_STATE = get_pmc_status(recv, strlen(recv));
+}
+
+int pmc_is_robot_busy(uint8_t station_addr, enum axis_id id)
+{
+	char cmd[128] = {0};
+	char recv[128] = {0};
+
+	cmd[0] = '/';
+	cmd[1] = get_hex_ch(station_addr);
+	cmd[2] = '?';
+	cmd[3] = 'a';
+	cmd[4] = 'S';
+	cmd[5] = '\r';
+
+	pmc_send_then_recv(cmd, strlen(cmd), recv, 128);
+	pmc_update_motor_state(recv, strlen(recv));
+	switch (id) {
+	case XY_AXIS:
+		return REG_XY_AXIS_STATE;
+		break;
+	case Z_AXIS:
+		return REG_Z_AXIS_STATE;
+		break;
+	case SYRING:
+		return REG_SYRING_STATE;
+		break;
+	default:
+		return 0;
+		break;
+	}
+}
+
+void pmc_motor_xy_pose(uint8_t station_addr, uint16_t x, uint16_t y)
+{
+	char num_str[25] = {0};
+	char cmd[128] = {0};
+	char recv[128] = {0};
+	char *cmd_pos = &cmd[0];
+
+	*(cmd_pos + strlen(cmd_pos)) = '/';
+	*(cmd_pos + strlen(cmd_pos)) = get_hex_ch(station_addr);
+	rt_memcpy(cmd_pos + strlen(cmd_pos), "aM1", strlen("aM1"));
+	*(cmd_pos + strlen(cmd_pos)) = 'B';
+	sprintf(num_str, "%u", x);
+	rt_memcpy(cmd_pos + strlen(cmd_pos), num_str, strlen(num_str));
+	rt_memset(num_str, 0, 25);
+
+	rt_memcpy(cmd_pos + strlen(cmd_pos), "aM2", strlen("aM2"));
+	*(cmd_pos + strlen(cmd_pos)) = 'B';
+	sprintf(num_str, "%u", y);
+	rt_memcpy(cmd_pos + strlen(cmd_pos), num_str, strlen(num_str));
+	*(cmd_pos + strlen(cmd_pos)) = 'R';
+	*(cmd_pos + strlen(cmd_pos)) = '\r';
+
+	pmc_send_then_recv(cmd, strlen(cmd), recv, 128);
+	pmc_update_motor_state(recv, strlen(recv));
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, XY_AXIS))
+			break;
+		rt_thread_mdelay(300);
+	}
+}
+
 int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 {
 	char cmd[25] = {0};
@@ -150,18 +278,6 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	pmc_send_then_recv(cmd, strlen(cmd), recv, 128);
 	return 0;
 }
-
-void PMC_FWD(int argc, char *argv[])
-{
-	pmc_motor_fwd(1, (argv[1][0] - '0'), 5000);
-}
-MSH_CMD_EXPORT(PMC_FWD, pmc fwd 10000);
-
-void PMC_REV(int argc, char *argv[])
-{
-	pmc_motor_rev(1, (argv[1][0] - '0'), 5000);
-}
-MSH_CMD_EXPORT(PMC_REV, pmc rev 10000);
 
 void PMC(int argc, char *argv[])
 {
