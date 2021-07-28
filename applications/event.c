@@ -5,6 +5,7 @@
 #include "app_modbus_slave.h"
 #include "modbus_event.h"
 #include "pmc005.h"
+#include "easyblink.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "event"
@@ -14,7 +15,7 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
-#define ROBOT_ADDR		1
+#define ROBOT_ADDR		2
 
 #define HOLD_REG_X_AXIS		180
 #define HOLD_REG_Y_AXIS		181
@@ -46,16 +47,58 @@ extern void set_valve(int id, int val);
 extern struct rt_mailbox modbus_ind_mailbox;
 static struct rt_thread *event_thread;
 
+extern ebled_t red;
+extern ebled_t green;
+extern ebled_t yellow;
+extern ebled_t beep;
+
 void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 {
 	//LOG_HEX("coil", 16, reg, 64);
 	uint16_t reg_index = (uint16_t)(addr - 16) / 8;
 	uint16_t reg_bit_index = (uint16_t)(addr - 16) % 8;
+	uint8_t bit_value = 0;
+	uint8_t valve_index = 0;
 
 	for (int i = 0; i < cnt; i++) {
 		reg_index = (i + addr - 16) / 8;
 		reg_bit_index = (i + addr - 16) % 8;
-		set_valve(addr - 16 + i, (reg[reg_index] & (0x01 << reg_bit_index)) >> reg_bit_index);
+		bit_value = (reg[reg_index] & (0x01 << reg_bit_index)) >> reg_bit_index;
+		valve_index = addr - 16 + i;
+
+		set_valve(valve_index, bit_value);
+		LOG_I("valve%d value%d", valve_index, bit_value);
+
+		if (valve_index == 41) {
+			LOG_I("valve 41");
+			if (bit_value) {
+				easyblink(red, 16, 50, 100);
+				easyblink(beep, 16, 50, 100);
+			} else {
+				easyblink_stop(red);
+				easyblink_stop(beep);
+			}
+		}
+		if (valve_index == 42) {
+			LOG_I("valve 42");
+			if (bit_value) {
+				easyblink(yellow, 16, 50, 300);
+				easyblink(beep, 16, 50, 300);
+			} else {
+				easyblink_stop(yellow);
+				easyblink_stop(beep);
+			}
+		}
+		if (valve_index == 43) {
+			LOG_I("valve 43");
+			if (bit_value) {
+				easyblink(green, 16, 50, 300);
+				easyblink(beep, 16, 50, 300);
+			} else {
+				easyblink_stop(green);
+				easyblink_stop(beep);
+			}
+		}
 	}
 }
 
