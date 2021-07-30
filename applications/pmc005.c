@@ -348,7 +348,7 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	return 0;
 }
 
-void PMC(int argc, uint8_t *argv[])
+void PMC(int argc, char *argv[])
 {
 	uint8_t cmd[128] = {0};
 	int recv_len = 0;
