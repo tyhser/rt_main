@@ -19,12 +19,20 @@ enum motor_id {
 	MOTOR_4,
 };
 
+struct response_info {
+	uint8_t host_addr;
+	uint8_t status;
+	uint8_t data[128];
+};
+
 int pmc_init(void);
 void pmc_motor_xy_pose(uint8_t station_addr, uint16_t x, uint16_t y);
 int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos);
 
 int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos);
 void pmc_stop(uint8_t station_addr);
+void pmc_robot_home(uint8_t station_addr);
+void pmc_motor_home(uint8_t station_addr, enum motor_id id);
 #ifdef __cplusplus
 }
 #endif
