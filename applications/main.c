@@ -26,9 +26,9 @@
 
 /* defined the LED0 pin: PB1 */
 #define LED0	GET_PIN(B, 14)
-#define LED1	GET_PIN(D, 15)
-#define LED2	GET_PIN(D, 13)
-#define LED3	GET_PIN(D, 14)
+#define RED	GET_PIN(D, 15)
+#define YELLOW	GET_PIN(D, 13)
+#define GREEN	GET_PIN(D, 14)
 #define BEEP	GET_PIN(D, 11)
 #define PC_ON	GET_PIN(B, 11)
 
@@ -51,26 +51,21 @@ ebled_t beep	= RT_NULL;
 
 int main(void)
 {
-	int count = 1;
-	/* set LED0 pin mode to output */
 	app_md_slave_init();
 	md_event_init();
 	event_init();
 	pmc_init();
 	valve_init();
-	LOG_I(GIT_DESC);
+	rt_kprintf("commit id: "GIT_DESC"\n");
 	pc_on_off();
 
-	led0 = easyblink_init_led(LED0, PIN_HIGH);
-	red = easyblink_init_led(LED1, PIN_HIGH);
-	green = easyblink_init_led(LED2, PIN_HIGH);
-	yellow = easyblink_init_led(LED3, PIN_HIGH);
-	beep = easyblink_init_led(BEEP, PIN_HIGH);
+	led0	= easyblink_init_led(LED0, PIN_HIGH);
+	red	= easyblink_init_led(RED, PIN_HIGH);
+	green	= easyblink_init_led(GREEN, PIN_HIGH);
+	yellow	= easyblink_init_led(YELLOW, PIN_HIGH);
+	beep	= easyblink_init_led(BEEP, PIN_HIGH);
 
 	easyblink(led0, -1, 100, 200);
 
-	while (count++) {
-		rt_thread_mdelay(100);
-	}
 	return RT_EOK;
 }

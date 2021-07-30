@@ -15,7 +15,7 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
-#define ROBOT_ADDR		2
+#define ROBOT_ADDR		1
 
 #define HOLD_REG_X_AXIS		180
 #define HOLD_REG_Y_AXIS		181
@@ -26,6 +26,8 @@
 
 #define HOLD_REG_SYRING		185
 #define HOLD_REG_SYRING_CMD	186
+
+#define HOLD_REG_SAMPLER_ADDR	188
 
 enum robot_cmd {
 	ROBOT_READY,
@@ -67,7 +69,7 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 		valve_index = addr - 16 + i;
 
 		set_valve(valve_index, bit_value);
-		LOG_I("valve%d value%d", valve_index, bit_value);
+		//LOG_I("valve%d value%d", valve_index, bit_value);
 
 		if (valve_index == 41) {
 			LOG_I("valve 41");
@@ -119,65 +121,81 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 {
 	LOG_I("hold reg: addr:%d cnt:%d reg:%p value0x%x", addr, cnt, reg, reg[addr]);
+#define REG_VALUE(mb_addr) (reg[(mb_addr) - S_REG_HOLDING_START])
 	switch (addr) {
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
-		switch (reg[HOLD_REG_XY_CMD]) {
+		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
 		case ROBOT_RUN:
-			pmc_motor_xy_pose(ROBOT_ADDR, reg[HOLD_REG_X_AXIS], reg[HOLD_REG_Y_AXIS]);
-			reg[HOLD_REG_XY_CMD] = ROBOT_READY;
+			pmc_motor_xy_pose(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), REG_VALUE(HOLD_REG_Y_AXIS));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
-			reg[HOLD_REG_XY_CMD] = ROBOT_READY;
 			break;
 		case ROBOT_HOME:
-			reg[HOLD_REG_XY_CMD] = ROBOT_READY;
+			if (REG_VALUE(HOLD_REG_X_AXIS) == 0)
+				pmc_motor_home(ROBOT_ADDR, MOTOR_1);
+			if (REG_VALUE(HOLD_REG_Y_AXIS) == 0)
+				pmc_motor_home(ROBOT_ADDR, MOTOR_2);
+			break;
+		case ROBOT_READY:
 			break;
 		default:
 			LOG_E("Unkow cmd");
 			break;
 		}
+		REG_VALUE(HOLD_REG_XY_CMD) = ROBOT_READY;
+		REG_VALUE(HOLD_REG_X_AXIS) = 0;
+		REG_VALUE(HOLD_REG_Y_AXIS) = 0;
 		break;
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
-		switch (reg[HOLD_REG_Z_CMD]) {
+		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
 		case ROBOT_FWD:
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_2, reg[HOLD_REG_Z_AXIS]);
+			pmc_motor_fwd(ROBOT_ADDR, MOTOR_3, REG_VALUE(HOLD_REG_Z_AXIS));
 			break;
 		case ROBOT_RCV:
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_2, reg[HOLD_REG_Z_AXIS]);
+			pmc_motor_rev(ROBOT_ADDR, MOTOR_3, REG_VALUE(HOLD_REG_Z_AXIS));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
 			break;
 		case ROBOT_HOME:
 			break;
+		case ROBOT_READY:
+			break;
 		default:
 			LOG_E("Unkow cmd");
 			break;
 		}
+		REG_VALUE(HOLD_REG_Z_AXIS) = 0;
+		REG_VALUE(HOLD_REG_Z_CMD) = ROBOT_READY;
 		break;
 	case HOLD_REG_SYRING ... HOLD_REG_SYRING_CMD:
-		switch (reg[HOLD_REG_SYRING_CMD]) {
+		switch (REG_VALUE(HOLD_REG_SYRING_CMD)) {
 		case ROBOT_FWD:
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_3, reg[HOLD_REG_SYRING]);
+			pmc_motor_fwd(ROBOT_ADDR, MOTOR_4, REG_VALUE(HOLD_REG_SYRING));
 			break;
 		case ROBOT_RCV:
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_3, reg[HOLD_REG_SYRING]);
+			pmc_motor_rev(ROBOT_ADDR, MOTOR_4, REG_VALUE(HOLD_REG_SYRING));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
 			break;
 		case ROBOT_HOME:
 			break;
+		case ROBOT_READY:
+			break;
 		default:
 			LOG_E("Unkow cmd");
 			break;
 		}
+		REG_VALUE(HOLD_REG_SYRING_CMD) = ROBOT_READY;
+		REG_VALUE(HOLD_REG_SYRING) = 0;
 		break;
 	default:
 		LOG_E("UNKNOW HOLD REG");
 		break;
 	}
+#undef REG_ARRAY_INDEX
 }
 
 static void event_thread_entry(void *parameter)

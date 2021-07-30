@@ -179,6 +179,8 @@
 
 /* tools packages */
 
+#define PKG_USING_CPU_USAGE
+#define PKG_USING_CPU_USAGE_LATEST_VERSION
 
 /* system packages */
 
