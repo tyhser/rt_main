@@ -37,8 +37,10 @@ extern void valve_init(void);
 
 void pc_on_off(void)
 {
+
+	rt_pin_mode(PC_ON, PIN_MODE_OUTPUT);
 	rt_pin_write(PC_ON, PIN_HIGH);
-	rt_thread_mdelay(500);
+	rt_thread_mdelay(300);
 	rt_pin_write(PC_ON, PIN_LOW);
 }
 MSH_CMD_EXPORT(pc_on_off, pc on off);

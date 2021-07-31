@@ -29,9 +29,19 @@
 
 #define HOLD_REG_SAMPLER_ADDR	188
 
+#define SYRING_LEAD_UL		164.388
+#define SYRING_SUB_PULSE	16
+#define Z_LEAD_MM		4
+#define Z_SUB_PULSE		16
+#define XY_SUB_PULSE		32
+#define XY_LEAD_MM		48
+#define XY_AXIS_PULSE(mm_10) ((mm_10) * XY_SUB_PULSE * 200 / (XY_LEAD_MM * 10))
+#define Z_AXIS_PULSE(mm_10) ((mm_10) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
+#define SYRING_PULSE(ul) ((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
+
 enum robot_cmd {
 	ROBOT_READY,
-	ROBOT_RUN,
+	ROBOT_ABS,
 	ROBOT_STOP,
 	ROBOT_HOME,
 	ROBOT_FWD,
@@ -125,8 +135,8 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	switch (addr) {
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
-		case ROBOT_RUN:
-			pmc_motor_xy_pose(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), REG_VALUE(HOLD_REG_Y_AXIS));
+		case ROBOT_ABS:
+			pmc_motor_xy_abs(ROBOT_ADDR, XY_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)), XY_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
@@ -139,6 +149,14 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			break;
 		case ROBOT_READY:
 			break;
+		case ROBOT_FWD:
+			pmc_motor_fwd(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), MOTOR_1);
+			pmc_motor_fwd(ROBOT_ADDR, REG_VALUE(HOLD_REG_Y_AXIS), MOTOR_2);
+			break;
+		case ROBOT_RCV:
+			pmc_motor_rev(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), MOTOR_1);
+			pmc_motor_rev(ROBOT_ADDR, REG_VALUE(HOLD_REG_Y_AXIS), MOTOR_2);
+			break;
 		default:
 			LOG_E("Unkow cmd");
 			break;
@@ -150,17 +168,22 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
 		case ROBOT_FWD:
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_3, REG_VALUE(HOLD_REG_Z_AXIS));
+			pmc_motor_fwd(ROBOT_ADDR, MOTOR_3, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
 			break;
 		case ROBOT_RCV:
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_3, REG_VALUE(HOLD_REG_Z_AXIS));
+			pmc_motor_rev(ROBOT_ADDR, MOTOR_3, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
 			break;
 		case ROBOT_HOME:
+			if (REG_VALUE(HOLD_REG_Z_AXIS) == 0)
+				pmc_motor_home(ROBOT_ADDR, MOTOR_3);
 			break;
 		case ROBOT_READY:
+			break;
+		case ROBOT_ABS:
+			pmc_motor_z_abs(ROBOT_ADDR, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
 			break;
 		default:
 			LOG_E("Unkow cmd");
@@ -172,17 +195,22 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	case HOLD_REG_SYRING ... HOLD_REG_SYRING_CMD:
 		switch (REG_VALUE(HOLD_REG_SYRING_CMD)) {
 		case ROBOT_FWD:
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_4, REG_VALUE(HOLD_REG_SYRING));
+			pmc_motor_fwd(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
 			break;
 		case ROBOT_RCV:
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_4, REG_VALUE(HOLD_REG_SYRING));
+			pmc_motor_rev(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
 			break;
 		case ROBOT_HOME:
+			if (REG_VALUE(HOLD_REG_SYRING) == 0)
+				pmc_motor_home(ROBOT_ADDR, MOTOR_4);
 			break;
 		case ROBOT_READY:
+			break;
+		case ROBOT_PUSH_PULL:
+			pmc_robot_syring_pp(ROBOT_ADDR, REG_VALUE(HOLD_REG_SYRING));
 			break;
 		default:
 			LOG_E("Unkow cmd");

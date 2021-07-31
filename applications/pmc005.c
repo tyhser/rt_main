@@ -15,6 +15,8 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
+#define MBP
+
 #define PMC_SERIAL	"uart3"
 #define PMC_BAUDRATE	9600
 #define PMC_PARITY	0
@@ -133,23 +135,6 @@ int pmc_motor_absolute_position(uint8_t station_addr, uint8_t motor_id, int32_t 
 	return 0;
 }
 
-int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
-{
-	uint8_t cmd[25] = {0};
-	uint8_t recv[128] = {0};
-	struct cmd_line_info cmd_info = {
-		.addr = station_addr,
-		.cmd = "P",
-		.data = pos,
-	};
-
-	pmc_make_cmd_line(&cmd_info, cmd, 25);
-
-	pmc_select_motor(motor_id, station_addr);
-	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
-	return 0;
-}
-
 int pmc_get_response_info(struct response_info *info, const uint8_t *recv, int len)
 {
         int ret = 0;
@@ -225,35 +210,50 @@ void pmc_stop(uint8_t station_addr)
 	REG_PMC_STATE = get_pmc_status(recv, strlen((char *)recv));
 }
 
-void pmc_motor_home(uint8_t station_addr, enum motor_id id)
-{
-	if (id > 4) {
-		LOG_E("unkown motor id home");
-		return;
-	}
-	uint8_t cmd[] = "/1aM1Z60000R\r";
-	uint8_t recv[128] = {0};
-	cmd[1] = get_hex_ch(station_addr);
-	cmd[4] = (uint8_t)(1 + id + '0');
-	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
-}
-
 void pmc_robot_home(uint8_t station_addr)
 {
 	uint8_t cmd[] = "/1aM1Z60000aM2Z60000aM3Z60000R\r";
 	uint8_t recv[128] = {0};
 	cmd[1] = get_hex_ch(station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
-
 }
 
 void pmc_robot_init(uint8_t station_addr)
 {
-	uint8_t cmd[] = "/1n3aM1m120L30h50V4000Z60000V16000aM3Z60000aM4Z60000R\r";
+
+#ifdef MBP
+	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM2j2m120V20000D25000z0aM4m100L1000V64000Z50000R\r";
+#else
+	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM4m100L1000V64000Z50000R\r";
+#endif
 	uint8_t recv[128] = {0};
 	cmd[1] = get_hex_ch(station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 }
+
+int pmc_is_motor_busy(uint8_t station_addr, enum motor_id id)
+{
+	uint8_t cmd[128] = {0};
+	uint8_t recv[128] = {0};
+	struct response_info info = {0};
+	uint32_t len = 0;
+
+	cmd[0] = '/';
+	cmd[1] = get_hex_ch(station_addr);
+	cmd[2] = '?';
+	cmd[3] = 'a';
+	cmd[4] = 'S';
+	cmd[5] = '\r';
+
+	len = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_get_response_info(&info, recv, len);
+
+	if (info.data[0] & (0x01 << id))
+		return 1;
+	else
+		return 0;
+}
+
 
 int pmc_is_robot_busy(uint8_t station_addr, enum axis_id id)
 {
@@ -291,13 +291,28 @@ int pmc_is_robot_busy(uint8_t station_addr, enum axis_id id)
 void pmc_block_wait_motor_free(uint8_t station_addr, enum motor_id id)
 {
 	for (int i = 0; i < 100; i++) {
-		if (!pmc_is_robot_busy(station_addr, XY_AXIS))
+		if (!pmc_is_motor_busy(station_addr, id))
 			break;
 		rt_thread_mdelay(300);
 	}
 }
 
-void pmc_motor_xy_pose(uint8_t station_addr, uint16_t x, uint16_t y)
+void pmc_motor_home(uint8_t station_addr, enum motor_id id)
+{
+	if (id > 4) {
+		LOG_E("unkown motor id home");
+		return;
+	}
+	uint8_t cmd[] = "/1aM1Z60000R\r";
+	uint8_t recv[128] = {0};
+	cmd[1] = get_hex_ch(station_addr);
+	cmd[4] = (uint8_t)(1 + id + '0');
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_block_wait_motor_free(station_addr, id);
+}
+
+
+void pmc_motor_xy_abs(uint8_t station_addr, uint16_t x, uint16_t y)
 {
 	uint8_t num_str[25] = {0};
 	uint8_t cmd[128] = {0};
@@ -331,6 +346,84 @@ void pmc_motor_xy_pose(uint8_t station_addr, uint16_t x, uint16_t y)
 	}
 }
 
+void pmc_motor_z_abs(uint8_t station_addr, uint16_t pos)
+{
+	uint8_t num_str[25] = {0};
+	uint8_t cmd[128] = {0};
+	uint8_t recv[128] = {0};
+	uint8_t *cmd_pos = &cmd[0];
+	struct response_info info = {0};
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
+	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM3", strlen("aM3"));
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'A';
+	sprintf((char *)num_str, "%u", pos);
+	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
+	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_get_response_info(&info, recv, 128);
+	pmc_update_motor_state(&info);
+
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, Z_AXIS))
+			break;
+		rt_thread_mdelay(300);
+	}
+}
+
+void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
+{
+	uint8_t num_str[25] = {0};
+	uint8_t cmd[128] = {0};
+	uint8_t recv[128] = {0};
+	uint8_t *cmd_pos = &cmd[0];
+	struct response_info info = {0};
+#define PP_CMD "Z45500gP46000D45500G"
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
+	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM4", strlen("aM4"));
+	rt_memcpy(cmd_pos + strlen((char *)cmd), PP_CMD, strlen(PP_CMD));
+
+	sprintf((char *)num_str, "%u", times);
+	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
+	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_get_response_info(&info, recv, 128);
+	pmc_update_motor_state(&info);
+
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, Z_AXIS))
+			break;
+		rt_thread_mdelay(300);
+	}
+
+#undef PP_CMD
+}
+
+int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
+{
+	uint8_t cmd[25] = {0};
+	uint8_t recv[128] = {0};
+	struct cmd_line_info cmd_info = {
+		.addr = station_addr,
+		.cmd = "P",
+		.data = pos,
+	};
+
+	pmc_make_cmd_line(&cmd_info, cmd, 25);
+
+	pmc_select_motor(motor_id, station_addr);
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_block_wait_motor_free(station_addr, motor_id);
+	return 0;
+}
+
 int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 {
 	uint8_t cmd[25] = {0};
@@ -345,6 +438,7 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 
 	pmc_select_motor(motor_id, station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_block_wait_motor_free(station_addr, motor_id);
 	return 0;
 }
 
