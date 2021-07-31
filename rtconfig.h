@@ -88,6 +88,7 @@
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_PIN
+#define RT_USING_ADC
 
 /* Using USB */
 
@@ -218,6 +219,9 @@
 #define SOC_STM32F407ZG
 
 /* Onboard Peripheral Drivers */
+
+#define BSP_USING_EXTERNED_ADC
+#define BSP_USING_CS1237
 
 /* On-chip Peripheral Drivers */
 
