@@ -80,17 +80,17 @@ int is_cs1237_ready(enum CS1237_CHANNEL ch)
 void cs1237_sclk_up(enum CS1237_CHANNEL ch)
 {
 	sclk_write(ch, 0);
-	DELAY_US(20);
+	DELAY_US(1);
 	sclk_write(ch, 1);
-	DELAY_US(20);
+	DELAY_US(1);
 }
 
 void cs1237_one_clk(enum CS1237_CHANNEL ch)
 {
 	sclk_write(ch, 1);
-	DELAY_US(20);
+	DELAY_US(1);
 	sclk_write(ch, 0);
-	DELAY_US(20);
+	DELAY_US(1);
 }
 
 /*sclk hold on high level 100us, enter low power mode*/
@@ -121,7 +121,7 @@ void cs1237_write_config(enum CS1237_CHANNEL ch, unsigned char config)
 {
 
 	unsigned char _dat = 0x80;
-	unsigned char count_i = 0;	//溢出计时器
+	unsigned char count_i = 0;
 
 	sclk_write(ch, 0);
 	drdydout_set_mode(ch, CS1237_R);
@@ -132,7 +132,7 @@ void cs1237_write_config(enum CS1237_CHANNEL ch, unsigned char config)
 		if (count_i > 150) {
 			sclk_write(ch, 1);
 			drdydout_write(ch, 1);
-			return;	//超时，则直接退出程序
+			return;
 		}
 	}
 
@@ -158,7 +158,7 @@ void cs1237_write_config(enum CS1237_CHANNEL ch, unsigned char config)
 	DRDYOUT_OUT(ch, 0);
 	DRDYOUT_OUT(ch, 1);
 
-	cs1237_one_clk(ch);	//37，切换DOUT的方向
+	cs1237_one_clk(ch);
 
 	for (int i = 0; i < 8; i++) {
 
@@ -170,7 +170,7 @@ void cs1237_write_config(enum CS1237_CHANNEL ch, unsigned char config)
 			drdydout_write(ch, 0);
 
 		sclk_write(ch, 0);
-		DELAY_US(40);
+		DELAY_US(1);
 		_dat >>= 1;
 	}
 	/*46个脉冲，切换DOUT引脚，并且拉高DOUT引脚 */
@@ -230,7 +230,7 @@ unsigned char cs1237_read_config(enum CS1237_CHANNEL ch)
 		if (drdydout_read(ch) == 1)
 			dat++;
 	}
-	cs1237_one_clk(ch);	//46个脉冲拉高数据引脚
+	cs1237_one_clk(ch);
 
 	return dat;
 }
@@ -264,12 +264,12 @@ int cs1237_read_adc(enum CS1237_CHANNEL ch)
 
 	for (i = 0; i < 24; i++) {
 		sclk_write(ch, 1);
-		DELAY_US(20);
+		DELAY_US(1);
 		dat <<= 1;
 		if (drdydout_read(ch) == 1)
 			dat++;
 		sclk_write(ch, 0);
-		DELAY_US(20);
+		DELAY_US(1);
 	}
 	//一共需要输入27个脉冲
 	for (i = 0; i < 3; i++)
@@ -333,7 +333,7 @@ int cs1237_init(void)
 
 	for (int i = channel1; i < channel_cnt; i++) {
 		while (cs1237_read_config(i) != CS_CONFIG) {
-			rt_kprintf("\n\tCS1237 read error...\n");
+			rt_kprintf("\n\tCS1237%d read error...\n", i);
 			cs1237_write_config(i, CS_CONFIG);
 			DELAY_MS(10);
 			continue;

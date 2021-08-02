@@ -126,6 +126,7 @@
 
 /* log format */
 
+#define ULOG_OUTPUT_FLOAT
 #define ULOG_USING_COLOR
 #define ULOG_OUTPUT_TIME
 #define ULOG_OUTPUT_LEVEL

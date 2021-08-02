@@ -11,7 +11,7 @@
 
 #define OFFSET                0.651
 #define ELECTRODE_DEV_NAME    "adc0"
-#define REFER_VOLTAGE         900000000
+#define REFER_VOLTAGE		1250000
 
 #define CONVERT_BITS    ((1<<23) - 1)
 
@@ -19,6 +19,8 @@ static struct {
 	rt_adc_device_t adc_dev;
 	struct rt_semaphore adc_sem;
 } adc_context = { 0 };
+
+extern double get_temperature_by_resistance(uint32_t r);
 
 rt_err_t electrode_init(void)
 {
@@ -41,23 +43,17 @@ rt_int32_t electrode_get_data(rt_uint32_t ch)
 		return 0;
 }
 
-float electrode_data_to_voltagemv(int64_t data)
+float get_resistance_by_adc_data(int64_t data)
 {
-	int64_t tmp = (data * REFER_VOLTAGE) / CONVERT_BITS;
-	float result = (float)tmp / 1000000;
-	return result;
-}
-
-int64_t voltagemv_to_electrode_data(float mv)
-{
-	return (mv * 1000000 * CONVERT_BITS / REFER_VOLTAGE);
+	return (float)(data * 33000) / (2 * CONVERT_BITS - data);
 }
 
 static int electrode_vol_sample(int argc, char *argv[])
 {
 	rt_adc_device_t adc_dev;
 	rt_int64_t value;
-	rt_int64_t vol;
+	float resistance = 0;
+	float temperature = 0;
 	rt_err_t ret = RT_EOK;
 
 	adc_dev = (rt_adc_device_t)rt_device_find(ELECTRODE_DEV_NAME);
@@ -68,14 +64,16 @@ static int electrode_vol_sample(int argc, char *argv[])
 	}
 	if (argc > 1) {
 		value = (int)rt_adc_read(adc_dev, argv[1][0] - '0');
-		vol = (value * REFER_VOLTAGE) / CONVERT_BITS;
-		LOG_I("electrode channel %d voltage: %.12fmv",
-		      (argv[1][0] - '0') + 1, (float)vol / 1000000);
+		resistance = get_resistance_by_adc_data(value);
+		temperature = get_temperature_by_resistance(resistance);
+
+		LOG_I("channel %d resistance: %.3f degree Celsius",
+		      (argv[1][0] - '0') + 1, temperature);
 	} else {
 		value = (int)rt_adc_read(adc_dev, 0);
-		vol = (value * REFER_VOLTAGE) / CONVERT_BITS;
-		LOG_I("electrode channel %d voltage: %.12fmv", 1,
-		      (float)vol / 1000000);
+		resistance = get_resistance_by_adc_data(value);
+		temperature = get_temperature_by_resistance(resistance);
+		LOG_I("channel 0 resistance: %.3f degree Celsius", temperature);
 	}
 	return ret;
 }
@@ -85,10 +83,9 @@ MSH_CMD_EXPORT(electrode_vol_sample, electrode voltage convert sample);
 static int electrode_vol_list(int argc, char *argv[])
 {
 	rt_adc_device_t adc_dev;
+	float resistance = 0;
+	float temperature = 0;
 	rt_int32_t value0;
-	rt_int32_t value1;
-	rt_int32_t value2;
-	rt_int32_t value3;
 	rt_err_t ret = RT_EOK;
 
 	adc_dev = (rt_adc_device_t) rt_device_find(ELECTRODE_DEV_NAME);
@@ -99,14 +96,10 @@ static int electrode_vol_list(int argc, char *argv[])
 	}
 	while (1) {
 		value0 = (int)rt_adc_read(adc_dev, 0);
-		rt_thread_mdelay(4);
-		value1 = (int)rt_adc_read(adc_dev, 1);
-		rt_thread_mdelay(4);
-		value2 = (int)rt_adc_read(adc_dev, 2);
-		rt_thread_mdelay(4);
-		value3 = (int)rt_adc_read(adc_dev, 3);
-		rt_thread_mdelay(4);
-		rt_kprintf("%d\t%d\t%d\t%d\n", value0, value1, value2, value3);
+		rt_thread_mdelay(50);
+		resistance = get_resistance_by_adc_data(value0);
+		temperature = get_temperature_by_resistance(resistance);
+		LOG_I("%.3f", temperature);
 	}
 	return ret;
 }

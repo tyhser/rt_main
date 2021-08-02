@@ -12,7 +12,7 @@ extern "C" {
 enum CS1237_CHANNEL
 {
     channel1,
-    channel2,
+    //channel2,
     channel_cnt
 };
 
