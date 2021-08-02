@@ -850,6 +850,8 @@ double get_temperature_by_resistance(uint32_t r)
 	double t2 = 0;
 	double result = 0;
 
+	r *= 100;
+
 	if (r <= ntc_tab[(sizeof(ntc_tab) / sizeof(ntc_tab[0])) - 1].r)
 		return ntc_tab[(sizeof(ntc_tab) / sizeof(ntc_tab[0])) - 1].t;
 

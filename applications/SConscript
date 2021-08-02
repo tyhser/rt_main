@@ -11,6 +11,7 @@ pmc005.c
 ntc_private.c
 event.c
 valve.c
+electrode.c
 """)
 
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)

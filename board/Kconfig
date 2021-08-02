@@ -8,7 +8,14 @@ config SOC_STM32F407ZG
     default y
 
 menu "Onboard Peripheral Drivers"
-
+    menuconfig BSP_USING_EXTERNED_ADC
+        bool "Enable Extern ADC"
+        default y
+        if BSP_USING_EXTERNED_ADC
+            config BSP_USING_CS1237
+                bool "Enable CS1237"
+                default y
+        endif
 endmenu
 
 menu "On-chip Peripheral Drivers"
