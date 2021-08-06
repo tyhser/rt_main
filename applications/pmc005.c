@@ -24,6 +24,13 @@
 #define PMC_MODE_CONTROL_PIN 58
 #define PMC_LVL		1
 
+enum slave_online_state {
+	SLAVE_ONLINE_OK,
+	SLAVE_ONLINE_CHECKING,
+	SLAVE_ONLINE_CONNECTION_TIMEOUT,
+	SLAVE_ONLINE_ERROR,
+};
+
 extern uint16_t usSRegInBuf[S_REG_INPUT_NREGS];
 
 #define REG_XY_AXIS_STATE		(usSRegInBuf[0])
@@ -31,6 +38,8 @@ extern uint16_t usSRegInBuf[S_REG_INPUT_NREGS];
 #define REG_SYRING_STATE		(usSRegInBuf[2])
 
 #define REG_PMC_STATE			(usSRegInBuf[3])
+
+#define REG_SLAVE_AXIS_ONLINE		(usSRegInBuf[4])
 
 #define PMC_BUSY	1
 #define PMC_FREE	0
@@ -55,18 +64,34 @@ struct cmd_line_info {
 static uint8_t buf[256];
 static rs485_inst_t *hinst = NULL;
 
+void mb_set_device_online_state(uint8_t slave_addr, enum slave_online_state state)
+{
+	/*axis slave address is 1, deliver address is 2, sampler address is from 3*/
+	*(&REG_SLAVE_AXIS_ONLINE + slave_addr - 1) = state;
+}
+
 int pmc_send_then_recv(uint8_t *read_cmd, int len, void *buf, int recv_size)
 {
+	uint8_t station_addr = read_cmd[1] - '0';
+
+	if (station_addr < 1 || station_addr > 15)
+		return -1;
+
+	mb_set_device_online_state(station_addr, SLAVE_ONLINE_CHECKING);
 	int recv_len = rs485_send_then_recv(hinst, (void *)read_cmd, len, buf, recv_size);
         if (recv_len < 0) {
 		LOG_E("rs485 send datas error.");
-		return len;
+		mb_set_device_online_state(station_addr, SLAVE_ONLINE_ERROR);
+		return recv_len;
         }
 
         if (recv_len == 0) {
 		LOG_D("rs485 recv timeout.");
-		return 0;
+		mb_set_device_online_state(station_addr, SLAVE_ONLINE_CONNECTION_TIMEOUT);
+		return recv_len;
         }
+
+	mb_set_device_online_state(station_addr, SLAVE_ONLINE_OK);
         
         *((uint8_t *)buf+recv_len) = 0;
 	return recv_len;
@@ -449,6 +474,7 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
+	int32_t send_result = 0;
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
@@ -468,8 +494,8 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
 
-	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
-	return 0;
+	send_result = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	return send_result;
 }
 
 void pmc_set_valve(uint8_t station_addr, enum pmc_valve value)
