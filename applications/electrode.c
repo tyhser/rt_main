@@ -96,7 +96,7 @@ static int electrode_vol_list(int argc, char *argv[])
 	}
 	while (1) {
 		value0 = (int)rt_adc_read(adc_dev, 0);
-		rt_thread_mdelay(50);
+		rt_thread_mdelay(5000);
 		resistance = get_resistance_by_adc_data(value0);
 		temperature = get_temperature_by_resistance(resistance);
 		LOG_I("%.3f", temperature);

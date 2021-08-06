@@ -29,6 +29,38 @@
 
 #define HOLD_REG_SAMPLER_ADDR	188
 
+struct pmc_pumb {
+	uint32_t modbus_addr;
+	uint32_t pmc_addr;
+	uint8_t pmc_motor_id;
+} pmc_pumb_tab[] = {
+	{190, 2, 1},
+	{191, 3, 1},
+	{192, 3, 2},
+	{193, 3, 3},
+	{194, 4, 1},
+	{195, 4, 2},
+	{196, 4, 3},
+	{197, 5, 1},
+	{198, 5, 2},
+	{199, 5, 3},
+	{200, 6, 1},
+	{201, 6, 2},
+	{202, 6, 3},
+	{203, 7, 1},
+	{204, 7, 2},
+	{205, 7, 3},
+	{206, 8, 1},
+	{207, 8, 2},
+	{208, 8, 3},
+	{209, 9, 1},
+	{210, 9, 2},
+	{211, 9, 3},
+	{212, 10, 1},
+	{213, 11, 2},
+	{214, 12, 3},
+};
+
 #define SYRING_LEAD_UL		164.388
 #define SYRING_SUB_PULSE	16
 #define Z_LEAD_MM		4
@@ -64,6 +96,77 @@ extern ebled_t green;
 extern ebled_t yellow;
 extern ebled_t beep;
 
+struct pmc_pumb *get_pmc_pumb_struct(uint32_t md_addr)
+{
+	for (int i = 0; i < sizeof(pmc_pumb_tab) / sizeof(pmc_pumb_tab[0]); i++) {
+		if (pmc_pumb_tab[i].modbus_addr == md_addr)
+			return &pmc_pumb_tab[i];
+	}
+	return NULL;
+}
+
+
+void red_alarm_handler(int bit)
+{
+	if (bit) {
+		easyblink(red, 16, 50, 100);
+		easyblink(beep, 16, 50, 100);
+	} else {
+		easyblink_stop(red);
+		easyblink_stop(beep);
+	}
+}
+
+void yellow_alarm_handler(int bit)
+{
+	if (bit) {
+		easyblink(yellow, 16, 50, 300);
+		easyblink(beep, 16, 50, 300);
+	} else {
+		easyblink_stop(yellow);
+		easyblink_stop(beep);
+	}
+}
+
+void green_alarm_handler(int bit)
+{
+	if (bit) {
+		easyblink(green, 16, 50, 300);
+		easyblink(beep, 16, 50, 300);
+	} else {
+		easyblink_stop(green);
+		easyblink_stop(beep);
+	}
+}
+
+int modbus_addr_to_pmc_addr(int addr)
+{
+	if (addr < 48) {
+		LOG_E("invalid modbus addr");
+		return 0;
+	}
+	/*sampler pmc addr from 3, deliver addr is 2*/
+	return (2 + (addr - 48) / 2);
+}
+
+int find_valve_modbus_addr_seat(int addr)
+{
+	static int sampler_modbus_start_addr = 48;
+	static int valve_num_per_pmc = 2;
+	int pmc_valve_start_addr = 0;
+
+	if (addr < sampler_modbus_start_addr) {
+		LOG_E("invalid modbus addr");
+		return 0;
+	}
+
+	pmc_valve_start_addr = (addr - sampler_modbus_start_addr) / valve_num_per_pmc;
+	if (pmc_valve_start_addr == addr)
+		return 0;
+	else
+		return 1;
+}
+
 void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 {
 	//LOG_HEX("coil", 16, reg, 64);
@@ -71,47 +174,69 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 	uint16_t reg_bit_index = (uint16_t)(addr - 16) % 8;
 	uint8_t bit_value = 0;
 	uint8_t valve_index = 0;
+	uint8_t deliver_valve_value = 0;
+
+#define COIL_REG_INDEX(md_addr, offset) ((((md_addr) + (offset)) - S_COIL_START) / 8)
+#define COIL_REG_BIT_INDEX(md_addr, offset) (((md_addr) + (offset) - S_COIL_START) % 8)
+#define COIL_VALUE(reg_index, reg_bit_index) ((reg[(reg_index)] & (0x01 << (reg_bit_index))) \
+						>> (reg_bit_index))
+#define COIL_ADDR_VALUE(md_addr, offset) ((reg[COIL_REG_INDEX((md_addr), (offset))] & (0x01 << (COIL_REG_BIT_INDEX((md_addr), (offset))))) \
+					>> (COIL_REG_BIT_INDEX((md_addr), (offset))))
 
 	for (int i = 0; i < cnt; i++) {
-		reg_index = (i + addr - 16) / 8;
-		reg_bit_index = (i + addr - 16) % 8;
-		bit_value = (reg[reg_index] & (0x01 << reg_bit_index)) >> reg_bit_index;
-		valve_index = addr - 16 + i;
+		reg_index	= COIL_REG_INDEX(addr, i);
+		reg_bit_index	= COIL_REG_BIT_INDEX(addr, i);
+		bit_value	= COIL_VALUE(reg_index, reg_bit_index);
+		valve_index	= addr - 16 + i;
 
 		set_valve(valve_index, bit_value);
 		//LOG_I("valve%d value%d", valve_index, bit_value);
 
-		if (valve_index == 41) {
-			LOG_I("valve 41");
-			if (bit_value) {
-				easyblink(red, 16, 50, 100);
-				easyblink(beep, 16, 50, 100);
-			} else {
-				easyblink_stop(red);
-				easyblink_stop(beep);
-			}
+		if (valve_index == 40)
+			red_alarm_handler(bit_value);
+		if (valve_index == 41)
+			yellow_alarm_handler(bit_value);
+		if (valve_index == 42)
+			green_alarm_handler(bit_value);
+
+		/*for deliver*/
+		if (valve_index >= 44 && valve_index <= 47) {
+			deliver_valve_value =
+			((uint8_t)COIL_ADDR_VALUE(44+16, 0)) |
+			((uint8_t)COIL_ADDR_VALUE(44+16, 1) << 1) |
+			((uint8_t)COIL_ADDR_VALUE(44+16, 2) << 2)|
+			((uint8_t)COIL_ADDR_VALUE(44+16, 3) << 3);
+
+			deliver_set_valve(2, deliver_valve_value);
 		}
-		if (valve_index == 42) {
-			LOG_I("valve 42");
-			if (bit_value) {
-				easyblink(yellow, 16, 50, 300);
-				easyblink(beep, 16, 50, 300);
+		if ((valve_index >= 48) && (valve_index <= 63)) {
+			uint8_t station_addr = modbus_addr_to_pmc_addr(valve_index);
+			uint16_t reg_index_friend = 0;
+			uint16_t reg_bit_friend_index = 0;
+			uint8_t friend_bit_value = 0;
+			uint8_t v1 = 0;
+			uint8_t v2 = 0;
+
+			if (find_valve_modbus_addr_seat(valve_index) == 0) {
+				reg_index_friend	= COIL_REG_INDEX(addr, i + 1);
+				reg_bit_friend_index	= COIL_REG_BIT_INDEX(addr, i + 1);
+				friend_bit_value	= COIL_VALUE(reg_index_friend, reg_bit_friend_index);
+				v1 = bit_value;
+				v2 = friend_bit_value;
+			} else if (find_valve_modbus_addr_seat(valve_index) == 1) {
+				reg_index_friend	= COIL_REG_INDEX(addr, i - 1);
+				reg_bit_friend_index	= COIL_REG_BIT_INDEX(addr, i - 1);
+				friend_bit_value	= COIL_VALUE(reg_index_friend, reg_bit_friend_index);
+				v1 = friend_bit_value;
+				v2 = bit_value;
 			} else {
-				easyblink_stop(yellow);
-				easyblink_stop(beep);
 			}
-		}
-		if (valve_index == 43) {
-			LOG_I("valve 43");
-			if (bit_value) {
-				easyblink(green, 16, 50, 300);
-				easyblink(beep, 16, 50, 300);
-			} else {
-				easyblink_stop(green);
-				easyblink_stop(beep);
-			}
+			pmc_set_valve(station_addr, (v1 & 0x01) | ((v2 & 0x01) << 1));
 		}
 	}
+#undef COIL_REG_INDEX
+#undef COIL_REG_BIT_INDEX
+#undef COIL_VALUE
 }
 
 /*
@@ -136,7 +261,9 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
 		case ROBOT_ABS:
-			pmc_motor_xy_abs(ROBOT_ADDR, XY_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)), XY_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
+			pmc_motor_xy_abs(ROBOT_ADDR,
+					XY_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)),
+					XY_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
@@ -218,6 +345,13 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		}
 		REG_VALUE(HOLD_REG_SYRING_CMD) = ROBOT_READY;
 		REG_VALUE(HOLD_REG_SYRING) = 0;
+		break;
+		/*pmc pumb speed control*/
+	case 190 ... 214:
+	{
+		struct pmc_pumb *pmc_pumb = get_pmc_pumb_struct(addr);
+		pmc_motor_speed_mode(pmc_pumb->pmc_addr, pmc_pumb->pmc_motor_id, REG_VALUE(addr));
+	}
 		break;
 	default:
 		LOG_E("UNKNOW HOLD REG");

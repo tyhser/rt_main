@@ -3,6 +3,7 @@
 #include <board.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "rs485.h"
 #include "pmc005.h"
 #include "app_modbus_slave.h"
@@ -440,6 +441,65 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	return 0;
+}
+
+int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
+{
+	uint8_t num_str[25] = {0};
+	uint8_t cmd[128] = {0};
+	uint8_t recv[128] = {0};
+	uint8_t *cmd_pos = &cmd[0];
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
+	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
+	*(cmd_pos + strlen((char *)cmd_pos)) = motor_id + '1';
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'V';
+	sprintf((char *)num_str, "%u", (uint16_t)abs(speed));
+	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
+
+	if (speed > 0)
+		*(cmd_pos + strlen((char *)cmd_pos)) = 'P';
+	else
+		*(cmd_pos + strlen((char *)cmd_pos)) = 'D';
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = '0';
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
+	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	return 0;
+}
+
+void pmc_set_valve(uint8_t station_addr, enum pmc_valve value)
+{
+	uint8_t cmd[128] = "/1J0R\r";
+	uint8_t recv[128] = {0};
+
+	cmd[1] = get_hex_ch(station_addr);
+	cmd[3] = value + '0';
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+}
+
+void deliver_set_valve(uint8_t station_addr, uint8_t value)
+{
+	uint8_t cmd[128] = {0};
+	uint8_t recv[128] = {0};
+	uint8_t num_str[25] = {0};
+	uint8_t pos = 0;
+
+	cmd[pos++] = (uint8_t)'/';
+	cmd[pos++] = (uint8_t)'2';
+	cmd[pos++] = (uint8_t)'J';
+	sprintf((char *)num_str, "%u", (uint16_t)value);
+	memcpy(&cmd[pos], num_str, strlen((char *)num_str));
+
+	*(cmd + strlen((char *)cmd)) = (uint8_t)'R';
+	*(cmd + strlen((char *)cmd)) = (uint8_t)'\r';
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 }
 
 void PMC(int argc, char *argv[])
