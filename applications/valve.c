@@ -51,5 +51,6 @@ void valve_init(void)
 
 void set_valve(int id, int val)
 {
-	rt_pin_write(valve_map[id], val);
+	if (id < sizeof(valve_map) / sizeof(valve_map[0]))
+		rt_pin_write(valve_map[id], val);
 }

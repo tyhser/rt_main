@@ -19,6 +19,13 @@ enum motor_id {
 	MOTOR_4,
 };
 
+enum pmc_valve {
+	PMC_VALVE_ALL_OFF,
+	PMC_VALVE_1_ON_2_OFF,
+	PMC_VALVE_1_OFF_2_ON,
+	PMC_VALVE_ALL_ON
+};
+
 struct response_info {
 	uint8_t host_addr;
 	uint8_t status;
@@ -36,6 +43,11 @@ void pmc_robot_home(uint8_t station_addr);
 void pmc_motor_home(uint8_t station_addr, enum motor_id id);
 
 void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times);
+
+int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed);
+void pmc_set_valve(uint8_t station_addr, enum pmc_valve value);
+
+void deliver_set_valve(uint8_t station_addr, uint8_t valve);
 #ifdef __cplusplus
 }
 #endif
