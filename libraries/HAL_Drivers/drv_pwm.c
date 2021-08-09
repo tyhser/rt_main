@@ -358,6 +358,9 @@ static rt_err_t stm32_hw_pwm_init(struct stm32_pwm *device)
     oc_config.OCNIdleState = TIM_OCNIDLESTATE_RESET;
     oc_config.OCIdleState  = TIM_OCIDLESTATE_RESET;
 
+    /* pwm pin configuration */
+    HAL_TIM_MspPostInit(tim);
+
     /* config pwm channel */
     if (device->channel & 0x01)
     {
@@ -398,9 +401,6 @@ static rt_err_t stm32_hw_pwm_init(struct stm32_pwm *device)
             goto __exit;
         }
     }
-
-    /* pwm pin configuration */
-    HAL_TIM_MspPostInit(tim);
 
     /* enable update request source */
     __HAL_TIM_URS_ENABLE(tim);

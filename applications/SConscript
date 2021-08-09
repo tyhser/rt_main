@@ -12,6 +12,7 @@ ntc_private.c
 event.c
 valve.c
 electrode.c
+temperature_controller.c
 """)
 
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)
