@@ -261,6 +261,7 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
 		case ROBOT_ABS:
+			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
 			pmc_motor_xy_abs(ROBOT_ADDR,
 					XY_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)),
 					XY_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
@@ -269,6 +270,7 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			pmc_stop(ROBOT_ADDR);
 			break;
 		case ROBOT_HOME:
+			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
 			if (REG_VALUE(HOLD_REG_X_AXIS) == 0)
 				pmc_motor_home(ROBOT_ADDR, MOTOR_1);
 			if (REG_VALUE(HOLD_REG_Y_AXIS) == 0)
@@ -277,10 +279,12 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		case ROBOT_READY:
 			break;
 		case ROBOT_FWD:
+			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
 			pmc_motor_fwd(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), MOTOR_1);
 			pmc_motor_fwd(ROBOT_ADDR, REG_VALUE(HOLD_REG_Y_AXIS), MOTOR_2);
 			break;
 		case ROBOT_RCV:
+			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
 			pmc_motor_rev(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), MOTOR_1);
 			pmc_motor_rev(ROBOT_ADDR, REG_VALUE(HOLD_REG_Y_AXIS), MOTOR_2);
 			break;
@@ -291,6 +295,7 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		REG_VALUE(HOLD_REG_XY_CMD) = ROBOT_READY;
 		REG_VALUE(HOLD_REG_X_AXIS) = 0;
 		REG_VALUE(HOLD_REG_Y_AXIS) = 0;
+		REG_VALUE(HOLD_REG_Z_AXIS) = 0;
 		break;
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
