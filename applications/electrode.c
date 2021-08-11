@@ -1,5 +1,6 @@
 #include <rtthread.h>
 #include <rtdevice.h>
+#include <stdlib.h>
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "electrode"
@@ -22,7 +23,7 @@ static struct {
 
 extern double get_temperature_by_resistance(uint32_t r);
 
-rt_err_t electrode_init(void)
+int electrode_init(void)
 {
 	adc_context.adc_dev =
 	    (rt_adc_device_t) rt_device_find(ELECTRODE_DEV_NAME);
@@ -34,6 +35,7 @@ rt_err_t electrode_init(void)
 		return RT_EOK;
 	}
 }
+INIT_APP_EXPORT(electrode_init);
 
 rt_int32_t electrode_get_data(rt_uint32_t ch)
 {
@@ -77,7 +79,6 @@ static int electrode_vol_sample(int argc, char *argv[])
 	}
 	return ret;
 }
-
 MSH_CMD_EXPORT(electrode_vol_sample, electrode voltage convert sample);
 
 static int electrode_vol_list(int argc, char *argv[])
@@ -104,3 +105,60 @@ static int electrode_vol_list(int argc, char *argv[])
 	return ret;
 }
 MSH_CMD_EXPORT(electrode_vol_list, electrode voltage convert list);
+
+int cmpfunc (const void * a, const void * b)
+{
+   return (*(int32_t *)a - *(int32_t *)b);
+}
+
+int32_t data_middle_filter(rt_uint32_t channel, int32_t in_data)
+{
+#define N 5
+	static int32_t data_buf[4][N] = {0};
+	int32_t sort_buf[N] = {0};
+
+	if (channel > 3) {
+		for (int j = 0; j < 4; j++) {
+			for (int i = 0; i < N; i++)
+				data_buf[j][i] = 0;
+		}
+		return -1;
+	}
+
+	for (int i = 0; i < N; i++) {
+		if (data_buf[channel][i] == 0) {
+			data_buf[channel][i] = in_data;
+
+			rt_memcpy(&sort_buf[0],
+				&data_buf[channel][0],
+				sizeof(data_buf[channel][0]) * (i + 1));
+
+			qsort(&sort_buf[0], i + 1, sizeof(sort_buf[0]), cmpfunc);
+			return sort_buf[(i + 1) / 2];
+		}
+	}
+
+	for (int i = 0; i < N; i++) {
+		data_buf[channel][i] = data_buf[channel][i + 1];
+	}
+	data_buf[channel][N - 1] = in_data;
+
+	rt_memcpy(&sort_buf[0], &data_buf[channel][0], sizeof(data_buf[channel]));
+	qsort(&sort_buf[0], N, sizeof(sort_buf[0]), cmpfunc);
+
+	return sort_buf[N/2];
+#undef N
+}
+
+float electrode_get_temperature(void)
+{
+	float resistance = 0;
+	float temperature = 0;
+	int32_t value = 0;
+
+	value = (int)rt_adc_read(adc_context.adc_dev, 0);
+	value = data_middle_filter(0, value);
+	resistance = get_resistance_by_adc_data(value);
+	temperature = get_temperature_by_resistance(resistance);
+	return temperature;
+}

@@ -15,6 +15,7 @@
 #include "pmc005.h"
 #include "modbus_event.h"
 #include "easyblink.h"
+#include "digital_ctrl.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "main"

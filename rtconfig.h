@@ -206,6 +206,8 @@
 
 /* miscellaneous packages */
 
+#define PKG_USING_DIGITALCTRL
+#define PKG_USING_DIGITALCTRL_LATEST_VERSION
 
 /* samples: kernel and components samples */
 
