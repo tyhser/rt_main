@@ -2,7 +2,7 @@
 
 int valve_map[] = {
 	[0] = GET_PIN(E, 15),
-	[1] = GET_PIN(E, 15), /*is for pwm temperature control*/
+	[1] = GET_PIN(B, 10),
 	[2] = GET_PIN(E, 13),
 	[3] = GET_PIN(E, 14),
 	[4] = GET_PIN(E, 11),
@@ -52,9 +52,6 @@ void valve_init(void)
 void set_valve(int id, int val)
 {
 	if (id < sizeof(valve_map) / sizeof(valve_map[0])) {
-		/*is for PWM temperature control*/
-		if (id == 1)
-			return;
 		rt_pin_write(valve_map[id], val);
 	}
 }

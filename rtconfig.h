@@ -87,10 +87,8 @@
 #define RT_USING_SERIAL
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 64
-#define RT_USING_HWTIMER
 #define RT_USING_PIN
 #define RT_USING_ADC
-#define RT_USING_PWM
 
 /* Using USB */
 
@@ -235,11 +233,6 @@
 #define BSP_USING_UART1
 #define BSP_USING_UART3
 #define BSP_USING_UART6
-#define BSP_USING_TIM
-#define BSP_USING_TIM2
-#define BSP_USING_PWM
-#define BSP_USING_PWM2
-#define BSP_USING_PWM2_CH3
 
 /* Board extended module Drivers */
 
