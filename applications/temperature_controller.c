@@ -37,16 +37,16 @@ void temperature_contro_entry(void *parameter)
 
 	COOLER_ON;
 	while (1) {
-		 temp = electrode_get_temperature();
+		temp = electrode_get_temperature();
 		//LOG_I("temperature:%0.3f", temp);
 		modbus_set_float(temp, &REG_TEMPERATURE_L);
-		if (temp <= 4.5) {
+		if (temp <= 3.5) {
 			COOLER_OFF;
 		}
 		if (temp >= 4.5) {
 			COOLER_ON;
 		}
-		rt_thread_mdelay(500);
+		rt_thread_mdelay(300);
 	}
 }
 

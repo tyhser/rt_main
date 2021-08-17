@@ -63,11 +63,14 @@ struct pmc_pumb {
 
 #define SYRING_LEAD_UL		164.388
 #define SYRING_SUB_PULSE	16
-#define Z_LEAD_MM		4
-#define Z_SUB_PULSE		16
-#define XY_SUB_PULSE		32
-#define XY_LEAD_MM		48
-#define XY_AXIS_PULSE(mm_10) ((mm_10) * XY_SUB_PULSE * 200 / (XY_LEAD_MM * 10))
+#define Z_LEAD_MM		18.8495
+#define Z_SUB_PULSE		32
+#define X_SUB_PULSE		32
+#define Y_SUB_PULSE		32
+#define X_LEAD_MM		21.2057
+#define Y_LEAD_MM		14.1371
+#define X_AXIS_PULSE(mm_10) ((mm_10) * X_SUB_PULSE * 200 / (X_LEAD_MM * 10))
+#define Y_AXIS_PULSE(mm_10) ((mm_10) * Y_SUB_PULSE * 200 / (Y_LEAD_MM * 10))
 #define Z_AXIS_PULSE(mm_10) ((mm_10) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
 #define SYRING_PULSE(ul) ((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
 
@@ -261,16 +264,16 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
 		case ROBOT_ABS:
-			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
+			pmc_motor_z_abs(ROBOT_ADDR, 0);
 			pmc_motor_xy_abs(ROBOT_ADDR,
-					XY_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)),
-					XY_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
+					X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)),
+					Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
 			break;
 		case ROBOT_HOME:
-			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
+			pmc_motor_z_abs(ROBOT_ADDR, 0);
 			if (REG_VALUE(HOLD_REG_X_AXIS) == 0)
 				pmc_motor_home(ROBOT_ADDR, MOTOR_1);
 			if (REG_VALUE(HOLD_REG_Y_AXIS) == 0)
@@ -279,14 +282,14 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		case ROBOT_READY:
 			break;
 		case ROBOT_FWD:
-			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
-			pmc_motor_fwd(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), MOTOR_1);
-			pmc_motor_fwd(ROBOT_ADDR, REG_VALUE(HOLD_REG_Y_AXIS), MOTOR_2);
+			pmc_motor_z_abs(ROBOT_ADDR, 0);
+			pmc_motor_fwd(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
+			pmc_motor_fwd(ROBOT_ADDR, MOTOR_2, Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
 			break;
 		case ROBOT_RCV:
-			pmc_motor_home(ROBOT_ADDR, MOTOR_3);
-			pmc_motor_rev(ROBOT_ADDR, REG_VALUE(HOLD_REG_X_AXIS), MOTOR_1);
-			pmc_motor_rev(ROBOT_ADDR, REG_VALUE(HOLD_REG_Y_AXIS), MOTOR_2);
+			pmc_motor_z_abs(ROBOT_ADDR, 0);
+			pmc_motor_rev(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
+			pmc_motor_rev(ROBOT_ADDR, MOTOR_2, Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
 			break;
 		default:
 			LOG_E("Unkow cmd");
