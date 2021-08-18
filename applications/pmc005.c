@@ -16,7 +16,7 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
-#define MBP
+#define MBP 0
 
 #define PMC_SERIAL	"uart3"
 #define PMC_BAUDRATE	9600
@@ -58,7 +58,7 @@ enum pmc_status {
 struct cmd_line_info {
 	uint8_t addr;
 	int8_t cmd[4];
-	uint32_t data;
+	int32_t data;
 };
 
 static uint8_t buf[256];
@@ -80,13 +80,13 @@ int pmc_send_then_recv(uint8_t *read_cmd, int len, void *buf, int recv_size)
 	mb_set_device_online_state(station_addr, SLAVE_ONLINE_CHECKING);
 	int recv_len = rs485_send_then_recv(hinst, (void *)read_cmd, len, buf, recv_size);
         if (recv_len < 0) {
-		LOG_E("rs485 send datas error.");
+		LOG_E("rs485 station:%d send datas error.", station_addr);
 		mb_set_device_online_state(station_addr, SLAVE_ONLINE_ERROR);
 		return recv_len;
         }
 
         if (recv_len == 0) {
-		LOG_D("rs485 recv timeout.");
+		LOG_D("rs485 station:%d recv timeout.", station_addr);
 		mb_set_device_online_state(station_addr, SLAVE_ONLINE_CONNECTION_TIMEOUT);
 		return recv_len;
         }
@@ -122,7 +122,7 @@ int pmc_make_cmd_line(struct cmd_line_info *cmd_info, uint8_t *cmd_line, int len
 	*cmd_line = '/';
 	*(cmd_line + 1) = get_hex_ch(cmd_info->addr);
 	rt_memcpy(cmd_line + 2, cmd_info->cmd, strlen((char *)(cmd_info->cmd)));
-	sprintf((char *)data_ch, "%lu", cmd_info->data);
+	sprintf((char *)data_ch, "%ld", cmd_info->data);
 	rt_memcpy(cmd_line + strlen((char *)cmd_line), data_ch, strlen((char *)data_ch));
 	*(cmd_line + strlen((char *)cmd_line)) = 'R';
 	*(cmd_line + strlen((char *)cmd_line)) = '\r';
@@ -198,8 +198,10 @@ enum pmc_status get_pmc_status(uint8_t *recv, int len)
 
 void pmc_update_motor_state(struct response_info *info)
 {
-	uint8_t busy_state = info->data[0];
+	uint8_t busy_state = info->data[0] - '0';
 	uint8_t pmc_status = info->status;
+
+	LOG_I("busy state:%c", info->data[0]);
 
 	rt_enter_critical();
 
@@ -247,10 +249,10 @@ void pmc_robot_home(uint8_t station_addr)
 void pmc_robot_init(uint8_t station_addr)
 {
 
-#ifdef MBP
+#if MBP
 	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM2j2m120V20000D25000z0aM4m100L1000V64000Z50000R\r";
 #else
-	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM4m100L1000V64000Z50000R\r";
+	uint8_t cmd[] = "/1n3aM3j16m120L120h50V16000Z60000V64000aM1j16m120L100h20V16000Z120000V64000aM2j16m120L110h20V16000Z100000V64000aM4m125L1000V45000Z65000R\r";
 #endif
 	uint8_t recv[128] = {0};
 	cmd[1] = get_hex_ch(station_addr);
@@ -279,7 +281,6 @@ int pmc_is_motor_busy(uint8_t station_addr, enum motor_id id)
 	else
 		return 0;
 }
-
 
 int pmc_is_robot_busy(uint8_t station_addr, enum axis_id id)
 {
@@ -337,8 +338,7 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 	pmc_block_wait_motor_free(station_addr, id);
 }
 
-
-void pmc_motor_xy_abs(uint8_t station_addr, uint16_t x, uint16_t y)
+void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 {
 	uint8_t num_str[25] = {0};
 	uint8_t cmd[128] = {0};
@@ -350,20 +350,19 @@ void pmc_motor_xy_abs(uint8_t station_addr, uint16_t x, uint16_t y)
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM1", strlen("aM1"));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'B';
-	sprintf((char *)num_str, "%u", x);
+	sprintf((char *)num_str, "%ld", x);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), num_str, strlen((char *)num_str));
 	rt_memset(num_str, 0, 25);
 
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM2", strlen("aM2"));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'B';
-	sprintf((char *)num_str, "%u", y);
+	sprintf((char *)num_str, "%ld", y);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
 
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
-	pmc_update_motor_state(&info);
 
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, XY_AXIS))
@@ -372,7 +371,7 @@ void pmc_motor_xy_abs(uint8_t station_addr, uint16_t x, uint16_t y)
 	}
 }
 
-void pmc_motor_z_abs(uint8_t station_addr, uint16_t pos)
+void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 {
 	uint8_t num_str[25] = {0};
 	uint8_t cmd[128] = {0};
@@ -384,17 +383,43 @@ void pmc_motor_z_abs(uint8_t station_addr, uint16_t pos)
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM3", strlen("aM3"));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'A';
-	sprintf((char *)num_str, "%u", pos);
+	sprintf((char *)num_str, "%ld", pos);
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
 
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
-	pmc_update_motor_state(&info);
 
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, Z_AXIS))
+			break;
+		rt_thread_mdelay(300);
+	}
+}
+
+void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
+{
+	uint8_t num_str[25] = {0};
+	uint8_t cmd[128] = {0};
+	uint8_t recv[128] = {0};
+	uint8_t *cmd_pos = &cmd[0];
+	struct response_info info = {0};
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
+	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM4", strlen("aM4"));
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'A';
+	sprintf((char *)num_str, "%ld", pos);
+	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
+	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_get_response_info(&info, recv, 128);
+
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, SYRING))
 			break;
 		rt_thread_mdelay(300);
 	}
@@ -421,7 +446,6 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
-	pmc_update_motor_state(&info);
 
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, Z_AXIS))

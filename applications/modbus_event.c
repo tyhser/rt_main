@@ -31,7 +31,7 @@ int md_event_send(enum md_rw rw, enum md_cmd_type reg_type, uint32_t start_addr,
 		.reg_cnt = reg_cnt,
 		.reg = reg,
 	};
-	result = rt_mq_send(mq, &msg, sizeof(msg));
+	result = rt_mq_send_wait(mq, &msg, sizeof(msg), RT_WAITING_FOREVER);
 	if (result != RT_EOK)
 		LOG_E("md event send ERR");
 	return result;

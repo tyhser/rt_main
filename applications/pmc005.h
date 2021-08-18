@@ -33,8 +33,9 @@ struct response_info {
 };
 
 int pmc_init(void);
-void pmc_motor_xy_abs(uint8_t station_addr, uint16_t x, uint16_t y);
-void pmc_motor_z_abs(uint8_t station_addr, uint16_t pos);
+void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y);
+void pmc_motor_z_abs(uint8_t station_addr, int32_t pos);
+void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos);
 int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos);
 
 int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos);
