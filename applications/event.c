@@ -64,9 +64,9 @@ struct pmc_pumb {
 #define SYRING_LEAD_UL		164.388
 #define SYRING_SUB_PULSE	16
 #define Z_LEAD_MM		18.8495
-#define Z_SUB_PULSE		32
-#define X_SUB_PULSE		32
-#define Y_SUB_PULSE		32
+#define Z_SUB_PULSE		16
+#define X_SUB_PULSE		16
+#define Y_SUB_PULSE		16
 #define X_LEAD_MM		21.2057
 #define Y_LEAD_MM		14.1371
 #define X_AXIS_PULSE(mm_10) ((mm_10) * X_SUB_PULSE * 200 / (X_LEAD_MM * 10))
@@ -329,6 +329,9 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		break;
 	case HOLD_REG_SYRING ... HOLD_REG_SYRING_CMD:
 		switch (REG_VALUE(HOLD_REG_SYRING_CMD)) {
+		case ROBOT_ABS:
+			pmc_motor_syring_abs(ROBOT_ADDR, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
+			break;
 		case ROBOT_FWD:
 			pmc_motor_fwd(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
 			break;
