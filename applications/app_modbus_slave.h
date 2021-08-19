@@ -8,6 +8,11 @@
 extern "C" {
 #endif
 
+#if S_DISCRETE_INPUT_NDISCRETES%8
+extern UCHAR    ucSDiscInBuf[S_DISCRETE_INPUT_NDISCRETES/8+1];
+#else
+extern UCHAR    ucSDiscInBuf[S_DISCRETE_INPUT_NDISCRETES/8]  ;
+#endif
 #if S_COIL_NCOILS%8
 extern UCHAR    ucSCoilBuf[S_COIL_NCOILS/8+1];
 #else
