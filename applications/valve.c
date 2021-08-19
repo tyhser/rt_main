@@ -80,22 +80,31 @@ void set_valve(int id, int val)
 
 void sw_input_change(void *args)
 {
-	uint8_t value = rt_pin_read(sw_input_map[(int)args]);;
+	int value = rt_pin_read(sw_input_map[(int)args]);;
 
 	LOG_I("input:%d value:%d", (int)args, value);
 	if (value) {
-		ucSDiscInBuf[(int)args % 8] |= ((uint8_t)1 << ((int)args / 8));
+		ucSDiscInBuf[(int)args / 8] |= ((uint8_t)1 << ((int)args % 8));
 	} else {
-		ucSDiscInBuf[(int)args % 8] &= ~((uint8_t)1 << ((int)args / 8));
+		ucSDiscInBuf[(int)args / 8] &= ~((uint8_t)1 << ((int)args % 8));
 	}
 }
 
 int sw_input_init(void)
 {
+	int value =  0;
+
 	for (int i = 0; i < sizeof(sw_input_map) / sizeof(sw_input_map[0]); i++) {
 		rt_pin_mode(sw_input_map[i], PIN_MODE_INPUT);
 		rt_pin_attach_irq(sw_input_map[i], PIN_IRQ_MODE_RISING_FALLING, sw_input_change, (void *)i);
 		rt_pin_irq_enable(sw_input_map[i], PIN_IRQ_ENABLE);
+		value = rt_pin_read(sw_input_map[i]);
+
+		if (value) {
+			ucSDiscInBuf[i / 8] |= ((uint8_t)1 << (i % 8));
+		} else {
+			ucSDiscInBuf[i / 8] &= ~((uint8_t)1 << (i % 8));
+		}
 	}
 	return 0;
 }
