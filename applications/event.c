@@ -73,6 +73,10 @@ struct pmc_pumb {
 #define Y_AXIS_PULSE(mm_10) ((mm_10) * Y_SUB_PULSE * 200 / (Y_LEAD_MM * 10))
 #define Z_AXIS_PULSE(mm_10) ((mm_10) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
 #define SYRING_PULSE(ul) (int32_t)((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
+#define X_AXIS_LENGTH		3350
+#define Y_AXIS_LENGTH		1835
+#define Z_AXIS_LENGTH		1055
+#define SYRING_LENGTH		10500
 
 enum robot_cmd {
 	ROBOT_READY,
@@ -257,6 +261,8 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
  */
 void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 {
+	int32_t current_position = 0;
+
 	LOG_I("hold reg: addr:%d cnt:%d reg:%p value0x%x", addr, cnt, reg, reg[addr]);
 #define REG_VALUE(mb_addr) (reg[(mb_addr) - S_REG_HOLDING_START])
 	switch (addr) {
@@ -264,6 +270,14 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
 		case ROBOT_ABS:
 			pmc_motor_z_abs(ROBOT_ADDR, 0);
+			if (REG_VALUE(HOLD_REG_X_AXIS) > X_AXIS_LENGTH) {
+				LOG_W("X axis move over length");
+				break;
+			}
+			if (REG_VALUE(HOLD_REG_Y_AXIS) > Y_AXIS_LENGTH) {
+				LOG_W("Y axis move over length");
+				break;
+			}
 			pmc_motor_xy_abs(ROBOT_ADDR,
 					X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)),
 					Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
@@ -282,13 +296,36 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			break;
 		case ROBOT_FWD:
 			pmc_motor_z_abs(ROBOT_ADDR, 0);
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_2, Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
+			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)) + current_position
+					> X_AXIS_PULSE(X_AXIS_LENGTH))
+				LOG_W("X axis move over length");
+			else
+				pmc_motor_fwd(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
+			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)) + current_position
+					> Y_AXIS_PULSE(Y_AXIS_LENGTH))
+				LOG_W("Y axis move over length");
+			else
+				pmc_motor_fwd(ROBOT_ADDR, MOTOR_2, Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
 			break;
 		case ROBOT_RCV:
 			pmc_motor_z_abs(ROBOT_ADDR, 0);
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_2, Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
+			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (current_position - X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)) < 0)
+				LOG_W("X axis invalid position");
+			else
+				pmc_motor_rev(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
+			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (current_position - Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)) < 0)
+				LOG_W("Y axis invalid position");
+			else
+				pmc_motor_rev(ROBOT_ADDR, MOTOR_2, Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
+
 			break;
 		default:
 			LOG_E("Unkow cmd");
@@ -302,10 +339,21 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
 		case ROBOT_FWD:
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_3, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
+			pmc_select_motor(MOTOR_3, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (current_position + Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS))
+					> Z_AXIS_PULSE(Z_AXIS_LENGTH))
+				LOG_W("Z axis over length");
+			else
+				pmc_motor_fwd(ROBOT_ADDR, MOTOR_3, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
 			break;
 		case ROBOT_RCV:
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_3, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
+			pmc_select_motor(MOTOR_3, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (current_position - Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)) < 0)
+				LOG_W("Z axis invalid position");
+			else
+				pmc_motor_rev(ROBOT_ADDR, MOTOR_3, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
@@ -317,7 +365,11 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		case ROBOT_READY:
 			break;
 		case ROBOT_ABS:
-			pmc_motor_z_abs(ROBOT_ADDR, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
+			if (REG_VALUE(HOLD_REG_Z_AXIS) > Z_AXIS_LENGTH) {
+				LOG_W("Z axis move over length");
+			} else {
+				pmc_motor_z_abs(ROBOT_ADDR, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
+			}
 			break;
 		default:
 			LOG_E("Unkow cmd");
@@ -329,13 +381,28 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	case HOLD_REG_SYRING ... HOLD_REG_SYRING_CMD:
 		switch (REG_VALUE(HOLD_REG_SYRING_CMD)) {
 		case ROBOT_ABS:
-			pmc_motor_syring_abs(ROBOT_ADDR, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
+			if (REG_VALUE(HOLD_REG_SYRING) > SYRING_LENGTH) {
+				LOG_W("Syring move over length");
+			} else {
+				pmc_motor_syring_abs(ROBOT_ADDR, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
+			}
 			break;
 		case ROBOT_FWD:
-			pmc_motor_fwd(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
+			pmc_select_motor(MOTOR_4, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) + current_position
+					> SYRING_PULSE(SYRING_LENGTH))
+				LOG_W("Syring move over length");
+			else
+				pmc_motor_fwd(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
 			break;
 		case ROBOT_RCV:
-			pmc_motor_rev(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
+			pmc_select_motor(MOTOR_4, ROBOT_ADDR);
+			current_position = pmc_get_current_motor_position();
+			if (current_position - SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) < 0)
+				LOG_W("Syring invalid position");
+			else
+				pmc_motor_rev(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
