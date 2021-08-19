@@ -130,6 +130,20 @@ int pmc_make_cmd_line(struct cmd_line_info *cmd_info, uint8_t *cmd_line, int len
 	return strlen((char *)cmd_line);
 }
 
+void pmc_set_current_motor_speed(int station_addr, uint32_t speed)
+{
+	uint8_t cmd[25] = {0};
+	uint8_t recv[128] = {0};
+	struct cmd_line_info cmd_info = {
+		.addr = station_addr,
+		.cmd = "V",
+		.data = speed,
+	};
+
+	pmc_make_cmd_line(&cmd_info, cmd, 25);
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+}
+
 void pmc_select_motor(enum motor_id id, int station_addr)
 {
 	uint8_t cmd[25] = {0};
@@ -201,7 +215,7 @@ void pmc_update_motor_state(struct response_info *info)
 	uint8_t busy_state = info->data[0] - '0';
 	uint8_t pmc_status = info->status;
 
-	LOG_I("busy state:%c", info->data[0]);
+	//LOG_I("busy state:%c", info->data[0]);
 
 	rt_enter_critical();
 
@@ -252,7 +266,7 @@ void pmc_robot_init(uint8_t station_addr)
 #if MBP
 	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM2j2m120V20000D25000z0aM4m100L1000V64000Z50000R\r";
 #else
-	uint8_t cmd[] = "/1n3aM3j16m120L120h50V16000Z60000V64000aM1j16m120L100h20V16000Z120000V64000aM2j16m120L110h20V16000Z100000V64000aM4m125L1000V45000Z65000R\r";
+	uint8_t cmd[] = "/1n3aM3j16m120L120h50V16000Z60000V64000aM1j16m120L100h20V16000Z120000V64000aM2j16m120L110h20V16000Z100000V64000aM4j16m125L1000V45000Z65000P25000z0R\r";
 #endif
 	uint8_t recv[128] = {0};
 	cmd[1] = get_hex_ch(station_addr);
@@ -324,18 +338,39 @@ void pmc_block_wait_motor_free(uint8_t station_addr, enum motor_id id)
 	}
 }
 
+uint32_t pmc_get_current_motor_max_speed(void)
+{
+	uint8_t cmd[] = "/1?2\r";
+	uint8_t recv[128] = {0};
+	struct response_info info = {0};
+	uint32_t speed = 0;
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_get_response_info(&info, recv, 128);
+
+	speed = atol((char *)info.data);
+	return speed;
+}
+
 void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 {
 	if (id > 4) {
 		LOG_E("unkown motor id home");
 		return;
 	}
-	uint8_t cmd[] = "/1aM1Z60000R\r";
+	uint8_t cmd[] = "/1aM1V12000Z120000R\r";
 	uint8_t recv[128] = {0};
+	uint32_t prev_speed = 0;
+
+	pmc_select_motor(id, station_addr);
+	prev_speed = pmc_get_current_motor_max_speed();
+
 	cmd[1] = get_hex_ch(station_addr);
 	cmd[4] = (uint8_t)(1 + id + '0');
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_block_wait_motor_free(station_addr, id);
+
+	pmc_set_current_motor_speed(station_addr, prev_speed);
 }
 
 void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)

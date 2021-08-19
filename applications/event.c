@@ -61,7 +61,7 @@ struct pmc_pumb {
 	{214, 12, 3},
 };
 
-#define SYRING_LEAD_UL		164.388
+#define SYRING_LEAD_UL		334.8309
 #define SYRING_SUB_PULSE	16
 #define Z_LEAD_MM		18.8495
 #define Z_SUB_PULSE		16
@@ -72,7 +72,7 @@ struct pmc_pumb {
 #define X_AXIS_PULSE(mm_10) ((mm_10) * X_SUB_PULSE * 200 / (X_LEAD_MM * 10))
 #define Y_AXIS_PULSE(mm_10) ((mm_10) * Y_SUB_PULSE * 200 / (Y_LEAD_MM * 10))
 #define Z_AXIS_PULSE(mm_10) ((mm_10) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
-#define SYRING_PULSE(ul) ((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
+#define SYRING_PULSE(ul) (int32_t)((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
 
 enum robot_cmd {
 	ROBOT_READY,
@@ -107,7 +107,6 @@ struct pmc_pumb *get_pmc_pumb_struct(uint32_t md_addr)
 	}
 	return NULL;
 }
-
 
 void red_alarm_handler(int bit)
 {
