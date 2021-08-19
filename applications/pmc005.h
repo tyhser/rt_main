@@ -33,6 +33,9 @@ struct response_info {
 };
 
 int pmc_init(void);
+void pmc_select_motor(enum motor_id id, int station_addr);
+uint32_t pmc_get_current_motor_position(void);
+uint32_t pmc_get_current_motor_max_speed(void);
 void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y);
 void pmc_motor_z_abs(uint8_t station_addr, int32_t pos);
 void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos);

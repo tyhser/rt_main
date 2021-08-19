@@ -338,6 +338,21 @@ void pmc_block_wait_motor_free(uint8_t station_addr, enum motor_id id)
 	}
 }
 
+uint32_t pmc_get_current_motor_position(void)
+{
+	uint8_t cmd[] = "/1?0\r";
+	uint8_t recv[128] = {0};
+	struct response_info info = {0};
+	uint32_t position = 0;
+
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_get_response_info(&info, recv, 128);
+
+	position = atol((char *)info.data);
+	LOG_I("position:%u", position);
+	return position;
+}
+
 uint32_t pmc_get_current_motor_max_speed(void)
 {
 	uint8_t cmd[] = "/1?2\r";
@@ -493,6 +508,9 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 
 int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 {
+	if (pos == 0)
+		return 0;
+
 	uint8_t cmd[25] = {0};
 	uint8_t recv[128] = {0};
 	struct cmd_line_info cmd_info = {
@@ -511,6 +529,9 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 
 int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 {
+	if (pos == 0)
+		return 0;
+
 	uint8_t cmd[25] = {0};
 	uint8_t recv[128] = {0};
 	struct cmd_line_info cmd_info = {
