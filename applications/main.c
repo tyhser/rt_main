@@ -30,7 +30,7 @@
 #define RED	GET_PIN(D, 15)
 #define YELLOW	GET_PIN(D, 13)
 #define GREEN	GET_PIN(D, 14)
-#define BEEP	GET_PIN(D, 11)
+#define BEEP	GET_PIN(C, 2)
 #define PC_ON	GET_PIN(B, 11)
 
 extern rt_err_t event_init(void);

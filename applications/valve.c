@@ -82,7 +82,7 @@ void sw_input_change(void *args)
 {
 	int value = rt_pin_read(sw_input_map[(int)args]);;
 
-	LOG_I("input:%d value:%d", (int)args, value);
+	//LOG_I("input:%d value:%d", (int)args, value);
 	if (value) {
 		ucSDiscInBuf[(int)args / 8] |= ((uint8_t)1 << ((int)args % 8));
 	} else {

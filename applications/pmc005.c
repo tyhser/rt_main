@@ -289,6 +289,7 @@ int pmc_is_motor_busy(uint8_t station_addr, enum motor_id id)
 
 	len = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, len);
+	REG_PMC_STATE = info.status & 0x0F;
 
 	if (info.data[0] & (0x01 << id))
 		return 1;
@@ -628,7 +629,7 @@ int pmc_init(void)
         	LOG_E("create rs485 instance fail.");
         	return -1;
     	}
-	rs485_set_recv_tmo(hinst, 1000);
+	rs485_set_recv_tmo(hinst, 500);
 	rs485_set_byte_tmo(hinst, 45000 / PMC_BAUDRATE);
     	if (rs485_connect(hinst) != RT_EOK) {
 		rs485_destory(hinst);
