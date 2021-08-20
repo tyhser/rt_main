@@ -17,10 +17,11 @@ extern uint16_t usSRegInBuf[S_REG_INPUT_NREGS];
 #define REG_TEMPERATURE_L (usSRegInBuf[20])
 #define REG_TEMPERATURE_H (usSRegInBuf[21])
 
-#define COOLER_ON set_valve(25, 1)
-#define COOLER_OFF set_valve(25, 0)
+#define COOLER_ON set_valve(24, 1)
+#define COOLER_OFF set_valve(24, 0)
 
 rt_thread_t temperature_control_thread = NULL;
+int temperature_control_enable = 0;
 
 void modbus_set_float(float f, uint16_t *dest)
 {
@@ -29,6 +30,11 @@ void modbus_set_float(float f, uint16_t *dest)
     rt_memcpy(&i, &f, sizeof(uint32_t));
     dest[0] = (uint16_t)i;
     dest[1] = (uint16_t)(i >> 16);
+}
+
+void temperature_control_enable_disable(int val)
+{
+	temperature_control_enable = val;
 }
 
 void temperature_contro_entry(void *parameter)
@@ -40,11 +46,14 @@ void temperature_contro_entry(void *parameter)
 		temp = electrode_get_temperature();
 		//LOG_I("temperature:%0.3f", temp);
 		modbus_set_float(temp, &REG_TEMPERATURE_L);
-		if (temp <= 3.5) {
+		if (temp <= -11) {
 			COOLER_OFF;
 		}
-		if (temp >= 4.5) {
-			COOLER_ON;
+		if (temp >= -10) {
+			if (temperature_control_enable)
+				COOLER_ON;
+			else
+				COOLER_OFF;
 		}
 		rt_thread_mdelay(300);
 	}
