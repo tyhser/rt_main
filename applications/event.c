@@ -249,6 +249,15 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 #undef COIL_VALUE
 }
 
+void print_hold_reg(uint32_t addr, ssize_t cnt, uint16_t *reg)
+{
+	rt_kprintf("\nwrite: ");
+	for (int i = addr; i < addr + cnt; i++) {
+		rt_kprintf("%d:%d ", i, reg[(i) - S_REG_HOLDING_START]);
+	}
+	rt_kprintf("\n");
+}
+
 /*
  * holding reg:
  * 180 181 182
@@ -267,7 +276,8 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 {
 	int32_t current_position = 0;
 
-	LOG_I("hold reg: addr:%d cnt:%d reg:%p value0x%x", addr, cnt, reg, reg[addr]);
+	//LOG_I("hold reg: addr:%d cnt:%d reg:%p value0x%x", addr, cnt, reg, reg[addr]);
+	print_hold_reg(addr, cnt, reg);
 #define REG_VALUE(mb_addr) (reg[(mb_addr) - S_REG_HOLDING_START])
 	switch (addr) {
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
@@ -302,13 +312,16 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			pmc_motor_z_abs(ROBOT_ADDR, 0);
 			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if (X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)) + current_position
 					> X_AXIS_PULSE(X_AXIS_LENGTH))
 				LOG_W("X axis move over length");
 			else
 				pmc_motor_fwd(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
+
 			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if (Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)) + current_position
 					> Y_AXIS_PULSE(Y_AXIS_LENGTH))
 				LOG_W("Y axis move over length");
@@ -319,12 +332,15 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			pmc_motor_z_abs(ROBOT_ADDR, 0);
 			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if ((current_position - X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS))) < 0)
 				LOG_W("X axis invalid position");
 			else
 				pmc_motor_rev(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
+
 			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if ((current_position - Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS))) < 0)
 				LOG_W("Y axis invalid position");
 			else
@@ -338,13 +354,14 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		REG_VALUE(HOLD_REG_XY_CMD) = ROBOT_READY;
 		REG_VALUE(HOLD_REG_X_AXIS) = 0;
 		REG_VALUE(HOLD_REG_Y_AXIS) = 0;
-		REG_VALUE(HOLD_REG_Z_AXIS) = 0;
+		//REG_VALUE(HOLD_REG_Z_AXIS) = 0;
 		break;
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
 		case ROBOT_FWD:
 			pmc_select_motor(MOTOR_3, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if ((current_position + Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)))
 					> Z_AXIS_PULSE(Z_AXIS_LENGTH))
 				LOG_W("Z axis over length");
@@ -354,6 +371,7 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		case ROBOT_RCV:
 			pmc_select_motor(MOTOR_3, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if ((current_position - Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS))) < 0)
 				LOG_W("Z axis invalid position");
 			else
@@ -393,6 +411,7 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		case ROBOT_FWD:
 			pmc_select_motor(MOTOR_4, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if (SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) + current_position
 					> SYRING_PULSE(SYRING_LENGTH))
 				LOG_W("Syring move over length");
@@ -402,6 +421,7 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 		case ROBOT_RCV:
 			pmc_select_motor(MOTOR_4, ROBOT_ADDR);
 			current_position = pmc_get_current_motor_position();
+
 			if (current_position - SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) < 0)
 				LOG_W("Syring invalid position");
 			else
