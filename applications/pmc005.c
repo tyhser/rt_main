@@ -611,7 +611,7 @@ void deliver_set_valve(uint8_t station_addr, uint8_t value)
 
 void PMC(int argc, char *argv[])
 {
-	uint8_t cmd[128] = {0};
+	uint8_t cmd[256] = {0};
 	int recv_len = 0;
 
 	rt_memcpy(&cmd[0], &argv[1][0], strlen((char *)argv[1]) + 1);
