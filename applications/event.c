@@ -15,8 +15,6 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
-#define ROBOT_ADDR		1
-
 #define HOLD_REG_X_AXIS		180
 #define HOLD_REG_Y_AXIS		181
 #define HOLD_REG_XY_CMD		182
@@ -61,22 +59,6 @@ struct pmc_pumb {
 	{214, 12, 3},
 };
 
-#define SYRING_LEAD_UL		334.8309
-#define SYRING_SUB_PULSE	16
-#define Z_LEAD_MM		18.8495
-#define Z_SUB_PULSE		16
-#define X_SUB_PULSE		16
-#define Y_SUB_PULSE		16
-#define X_LEAD_MM		21.2057
-#define Y_LEAD_MM		14.1371
-#define X_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * X_SUB_PULSE * 200 / (X_LEAD_MM * 10))
-#define Y_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Y_SUB_PULSE * 200 / (Y_LEAD_MM * 10))
-#define Z_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
-#define SYRING_PULSE(ul) (int32_t)((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
-#define X_AXIS_LENGTH		3350
-#define Y_AXIS_LENGTH		1835
-#define Z_AXIS_LENGTH		1055
-#define SYRING_LENGTH		10500
 
 enum robot_cmd {
 	ROBOT_READY,

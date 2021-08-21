@@ -2,6 +2,25 @@
 #define _PMC005_H_
 #include <rtthread.h>
 
+#define SYRING_LEAD_UL		334.8309
+#define SYRING_SUB_PULSE	16
+#define Z_LEAD_MM		18.8495
+#define Z_SUB_PULSE		16
+#define X_SUB_PULSE		16
+#define Y_SUB_PULSE		16
+#define X_LEAD_MM		21.2057
+#define Y_LEAD_MM		14.1371
+#define X_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * X_SUB_PULSE * 200 / (X_LEAD_MM * 10))
+#define Y_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Y_SUB_PULSE * 200 / (Y_LEAD_MM * 10))
+#define Z_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
+#define SYRING_PULSE(ul) (int32_t)((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
+#define X_AXIS_LENGTH		3350
+#define Y_AXIS_LENGTH		1835
+#define Z_AXIS_LENGTH		1055
+#define SYRING_LENGTH		10500
+#define X_AXIS_PULSE_TO_LEN(pulse) (int32_t)((float)(pulse) * X_LEAD_MM * 10 / (200 * X_SUB_PULSE))
+
+#define ROBOT_ADDR		1
 #ifdef __cplusplus
 extern "C" {
 #endif
