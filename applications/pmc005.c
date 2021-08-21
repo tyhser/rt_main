@@ -389,6 +389,19 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 	pmc_set_current_motor_speed(station_addr, prev_speed);
 }
 
+uint32_t get_x_axis_max_speed_by_length(int32_t x)
+{
+	uint32_t speed = ((x * 3200 / 335) + 32000);
+	LOG_I("x:%d must speed:%d", x, speed);
+
+	if (speed > 64000)
+		return 64000;
+	else if (speed < 32000)
+		return 32000;
+	else
+		return speed;
+}
+
 void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 {
 	uint8_t num_str[25] = {0};
@@ -397,11 +410,32 @@ void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 	uint8_t *cmd_pos = &cmd[0];
 	struct response_info info = {0};
 
+	int32_t current_position = 0;
+	uint32_t prev_speed = 0;
+	uint32_t x_axis_speed = 0;
+
+	pmc_select_motor(MOTOR_1, ROBOT_ADDR);
+	current_position = pmc_get_current_motor_position();
+	prev_speed = pmc_get_current_motor_max_speed();
+	x_axis_speed = get_x_axis_max_speed_by_length(abs(X_AXIS_PULSE_TO_LEN(current_position)-x));
+	LOG_I("x axis speed:%ld", x_axis_speed);
+
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM1", strlen("aM1"));
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'V';
+	sprintf((char *)num_str, "%ld", x_axis_speed);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), num_str, strlen((char *)num_str));
+	rt_memset(num_str, 0, 25);
+
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'B';
 	sprintf((char *)num_str, "%ld", x);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), num_str, strlen((char *)num_str));
+	rt_memset(num_str, 0, 25);
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'V';
+	sprintf((char *)num_str, "%ld", prev_speed);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), num_str, strlen((char *)num_str));
 	rt_memset(num_str, 0, 25);
 
