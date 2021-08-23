@@ -594,7 +594,7 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
-	*(cmd_pos + strlen((char *)cmd_pos)) = motor_id + '1';
+	*(cmd_pos + strlen((char *)cmd_pos)) = motor_id + '0';
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'V';
 	sprintf((char *)num_str, "%u", (uint16_t)abs(speed));
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));

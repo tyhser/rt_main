@@ -240,6 +240,20 @@ void print_hold_reg(uint32_t addr, ssize_t cnt, uint16_t *reg)
 	rt_kprintf("\n");
 }
 
+uint16_t get_holding_value(uint32_t addr, struct md_reg_obj *obj, uint32_t len)
+{
+	if (obj == NULL) {
+		LOG_E("md_reg_obj is NULL");
+		return 0;
+	}
+	for (int i = 0; i < len; i++) {
+		if (obj[i].md_addr == addr) {
+			return obj[i].value;
+		}
+	}
+	return 0;
+}
+
 /*
  * holding reg:
  * 180 181 182
@@ -254,13 +268,19 @@ void print_hold_reg(uint32_t addr, ssize_t cnt, uint16_t *reg)
  *  |     |
  * [P/D, cmd] syring
  */
-void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
+void md_hold_reg_write_handle(struct md_event *event)
 {
+	if (event == NULL) {
+		LOG_E("event is NULL");
+		return;
+	}
 	int32_t current_position = 0;
+	uint32_t addr = event->start_addr;
+	uint32_t cnt = event->reg_cnt;
 
-	//LOG_I("hold reg: addr:%d cnt:%d reg:%p value0x%x", addr, cnt, reg, reg[addr]);
-	print_hold_reg(addr, cnt, reg);
-#define REG_VALUE(mb_addr) (reg[(mb_addr) - S_REG_HOLDING_START])
+	print_hold_reg(addr, cnt, event->reg);
+#define REG(mb_addr) (event->reg[(mb_addr) - S_REG_HOLDING_START])
+#define REG_VALUE(mb_addr) get_holding_value((mb_addr), event->holding_reg_obj, 10)
 	switch (addr) {
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
@@ -333,10 +353,10 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			LOG_E("Unkow cmd");
 			break;
 		}
-		REG_VALUE(HOLD_REG_XY_CMD) = ROBOT_READY;
-		REG_VALUE(HOLD_REG_X_AXIS) = 0;
-		REG_VALUE(HOLD_REG_Y_AXIS) = 0;
-		//REG_VALUE(HOLD_REG_Z_AXIS) = 0;
+		REG(HOLD_REG_XY_CMD) = ROBOT_READY;
+		REG(HOLD_REG_X_AXIS) = 0;
+		REG(HOLD_REG_Y_AXIS) = 0;
+		//REG(HOLD_REG_Z_AXIS) = 0;
 		break;
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
@@ -379,8 +399,8 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			LOG_E("Unkow cmd");
 			break;
 		}
-		REG_VALUE(HOLD_REG_Z_AXIS) = 0;
-		REG_VALUE(HOLD_REG_Z_CMD) = ROBOT_READY;
+		REG(HOLD_REG_Z_AXIS) = 0;
+		REG(HOLD_REG_Z_CMD) = ROBOT_READY;
 		break;
 	case HOLD_REG_SYRING ... HOLD_REG_SYRING_CMD:
 		switch (REG_VALUE(HOLD_REG_SYRING_CMD)) {
@@ -425,8 +445,8 @@ void md_hold_reg_write_handle(uint32_t addr, ssize_t cnt, uint16_t *reg)
 			LOG_E("Unkow cmd");
 			break;
 		}
-		REG_VALUE(HOLD_REG_SYRING_CMD) = ROBOT_READY;
-		REG_VALUE(HOLD_REG_SYRING) = 0;
+		REG(HOLD_REG_SYRING_CMD) = ROBOT_READY;
+		REG(HOLD_REG_SYRING) = 0;
 		break;
 		/*pmc pumb speed control*/
 	case 190 ... 214:
@@ -464,7 +484,7 @@ static void event_thread_entry(void *parameter)
 			md_coil_write_handle(addr, cnt, (uint8_t *)reg);
 			break;
 		case MD_HOLDING_REG:
-			md_hold_reg_write_handle(addr, cnt, (uint16_t *)reg);
+			md_hold_reg_write_handle(event);
 			break;
 		default:
 			break;
