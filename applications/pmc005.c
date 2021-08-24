@@ -7,6 +7,7 @@
 #include "rs485.h"
 #include "pmc005.h"
 #include "app_modbus_slave.h"
+#include "easyblink.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "pmc"
@@ -32,6 +33,7 @@ enum slave_online_state {
 };
 
 extern uint16_t usSRegInBuf[S_REG_INPUT_NREGS];
+extern ebled_t led0;
 
 #define REG_XY_AXIS_STATE		(usSRegInBuf[0])
 #define REG_Z_AXIS_STATE		(usSRegInBuf[1])
