@@ -1,0 +1,78 @@
+From 83a57ec2724c07c91ca13e5a86b8dccdc9e942f7 Mon Sep 17 00:00:00 2001
+From: "Jiajun.Tai" <tyhser@hotmail.com>
+Date: Tue, 20 Jul 2021 14:51:01 +0800
+Subject: [PATCH 1/2] add event
+
+---
+ port/user_mb_app.c | 28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
+
+diff --git a/port/user_mb_app.c b/port/user_mb_app.c
+index 8da7376..47cc20f 100644
+--- a/port/user_mb_app.c
++++ b/port/user_mb_app.c
+@@ -19,7 +19,7 @@
+  * File: $Id: user_mb_app.c,v 1.60 2013/11/23 11:49:05 Armink $
+  */
+ #include "user_mb_app.h"
+-
++#include "modbus_event.h"
+ /*------------------------Slave mode use these variables----------------------*/
+ //Slave mode:DiscreteInputs variables
+ USHORT   usSDiscInStart                               = S_DISCRETE_INPUT_START;
+@@ -135,14 +135,20 @@ eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
+ 
+         /* write current register values with new values from the protocol stack. */
+         case MB_REG_WRITE:
+-            while (usNRegs > 0)
+-            {
+-                pusRegHoldingBuf[iRegIndex] = *pucRegBuffer++ << 8;
+-                pusRegHoldingBuf[iRegIndex] |= *pucRegBuffer++;
+-                iRegIndex++;
+-                usNRegs--;
+-            }
+-            break;
++	    {
++		typeof(iRegIndex) tmp_index = iRegIndex;
++		typeof(usNRegs) tmp_n       = usNRegs;
++		while (usNRegs > 0)
++		{
++		    pusRegHoldingBuf[iRegIndex] = *pucRegBuffer++ << 8;
++		    pusRegHoldingBuf[iRegIndex] |= *pucRegBuffer++;
++		    iRegIndex++;
++		    usNRegs--;
++		}
++		md_event_send(MD_EVENT_REG_WRITE, MD_HOLDING_REG,
++				tmp_index, tmp_n, &pusRegHoldingBuf[tmp_index]);
++    	    }
++                break;
+         }
+     }
+     else
+@@ -206,12 +212,15 @@ eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
+ 
+             /* write current coil values with new values from the protocol stack. */
+         case MB_REG_WRITE:
++	{
++	    typeof(iRegIndex) tmp_reg_index = iRegIndex;
+             while (iNReg > 1)
+             {
+                 xMBUtilSetBits(&pucCoilBuf[iRegIndex++], iRegBitIndex, 8,
+                         *pucRegBuffer++);
+                 iNReg--;
+             }
++	    md_event_send(MD_EVENT_REG_WRITE, MD_COIL, tmp_reg_index, usNCoils, &pucCoilBuf[tmp_reg_index]);
+             /* last coils */
+             usNCoils = usNCoils % 8;
+             /* xMBUtilSetBits has bug when ucNBits is zero */
+@@ -220,6 +229,7 @@ eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
+                 xMBUtilSetBits(&pucCoilBuf[iRegIndex++], iRegBitIndex, usNCoils,
+                         *pucRegBuffer++);
+             }
++	}
+             break;
+         }
+     }
+-- 
+2.25.1
+
