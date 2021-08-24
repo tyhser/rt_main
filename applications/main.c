@@ -68,7 +68,7 @@ int main(void)
 	yellow	= easyblink_init_led(YELLOW, PIN_HIGH);
 	beep	= easyblink_init_led(BEEP, PIN_HIGH);
 
-	easyblink(led0, -1, 100, 200);
+	easyblink(led0, -1, 500, 1000);
 
 	return RT_EOK;
 }

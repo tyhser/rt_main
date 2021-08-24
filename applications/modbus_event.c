@@ -32,8 +32,10 @@ int md_event_send(enum md_rw rw, enum md_cmd_type reg_type, uint32_t start_addr,
 		.reg = reg,
 	};
 	result = rt_mq_send_wait(mq, &msg, sizeof(msg), RT_WAITING_FOREVER);
-	if (result != RT_EOK)
+	if (result != RT_EOK) {
 		LOG_E("md event send ERR");
+		easyblink(led0, -1, 200, 400);
+	}
 	return result;
 }
 
@@ -43,8 +45,10 @@ struct md_event *md_event_recv(void)
 	struct md_event *msg;
 
 	msg = rt_malloc(sizeof(struct md_event));
-	if (!msg)
+	if (!msg) {
 		LOG_E("new md msg failed");
+		easyblink(led0, -1, 200, 400);
+	}
 
 	ret = rt_mq_recv(mq, msg, sizeof(*msg), RT_WAITING_FOREVER);
 	if (ret == RT_EOK)
@@ -81,6 +85,7 @@ uint32_t md_event_get_start_addr(struct md_event *msg)
 		return msg->start_addr;
 	} else {
 		LOG_E("msg is NULL");
+		easyblink(led0, -1, 200, 400);
 		return 0;
 	}
 }
@@ -91,6 +96,7 @@ uint16_t *md_event_get_reg_pointer(struct md_event *msg)
 		return msg->reg;
 	} else {
 		LOG_E("msg is NULL");
+		easyblink(led0, -1, 200, 400);
 		return 0;
 	}
 }

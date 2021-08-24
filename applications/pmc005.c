@@ -661,6 +661,7 @@ int pmc_init(void)
 	hinst = rs485_create(PMC_SERIAL, PMC_BAUDRATE, PMC_PARITY, PMC_MODE_CONTROL_PIN, PMC_LVL);
 	if (hinst == RT_NULL) {
         	LOG_E("create rs485 instance fail.");
+		easyblink(led0, -1, 200, 400);
         	return -1;
     	}
 	rs485_set_recv_tmo(hinst, 500);
@@ -668,6 +669,7 @@ int pmc_init(void)
     	if (rs485_connect(hinst) != RT_EOK) {
 		rs485_destory(hinst);
 		LOG_E("rs485 connect fail.");
+		easyblink(led0, -1, 200, 400);
 		return -1;
     	}
 	rt_thread_mdelay(500);

@@ -86,8 +86,10 @@ void app_md_slave_init(void)
 			    (rt_size_t) (sizeof(mailbox_pool) / 4),
 			    RT_IPC_FLAG_FIFO);
 
-	if (result != RT_EOK)
+	if (result != RT_EOK) {
 		LOG_E("init mailbox failed.");
+		easyblink(led0, -1, 200, 400);
+	}
 
 	rt_thread_init(&modbus_poll_thread,
 		       "modbus_poll",
