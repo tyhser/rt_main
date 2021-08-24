@@ -1,6 +1,7 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include "modbus_event.h"
+#include "app_modbus_slave.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_md_eventAG      "md_event"
@@ -14,7 +15,7 @@ static rt_mq_t mq;
 
 void md_event_init(void)
 {
-	mq = rt_mq_create("md_mqt", sizeof(struct md_event), 4096, RT_IPC_FLAG_FIFO);
+	mq = rt_mq_create("md_mqt", sizeof(struct md_event), 256, RT_IPC_FLAG_FIFO);
 
 	if (mq == NULL)
 		rt_kprintf("init message queue failed.\n");
@@ -31,6 +32,12 @@ int md_event_send(enum md_rw rw, enum md_cmd_type reg_type, uint32_t start_addr,
 		.reg_cnt = reg_cnt,
 		.reg = reg,
 	};
+
+	for (int i = 0; i < reg_cnt; i++) {
+		msg.holding_reg_obj[i].md_addr = start_addr + i;
+		msg.holding_reg_obj[i].value = ((uint16_t *)reg)[start_addr - S_REG_HOLDING_START + i];
+	}
+
 	result = rt_mq_send_wait(mq, &msg, sizeof(msg), RT_WAITING_FOREVER);
 	if (result != RT_EOK) {
 		LOG_E("md event send ERR");
@@ -48,6 +55,12 @@ struct md_event *md_event_recv(void)
 	if (!msg) {
 		LOG_E("new md msg failed");
 		easyblink(led0, -1, 200, 400);
+		return NULL;
+	}
+	if (!mq) {
+		LOG_E("mq null");
+		easyblink(led0, -1, 200, 400);
+		return NULL;
 	}
 
 	ret = rt_mq_recv(mq, msg, sizeof(*msg), RT_WAITING_FOREVER);

@@ -18,12 +18,18 @@ enum md_cmd_type {
 	MD_NONE
 };
 
+struct md_reg_obj {
+	uint32_t md_addr;
+	uint16_t value;
+};
+
 struct md_event {
 	enum md_rw rw;
 	enum md_cmd_type reg_type;
 	uint32_t start_addr;
 	size_t reg_cnt;
 	uint16_t *reg;
+	struct md_reg_obj holding_reg_obj[4];
 };
 
 void md_event_init(void);
