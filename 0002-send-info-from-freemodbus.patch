@@ -1,0 +1,52 @@
+From 9278b1bf2d42287f9b0055198940af696415a1bf Mon Sep 17 00:00:00 2001
+From: "Jiajun.Tai" <tyhser@hotmail.com>
+Date: Thu, 22 Jul 2021 15:49:58 +0800
+Subject: [PATCH 2/2] send info from freemodbus
+
+---
+ port/user_mb_app.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/port/user_mb_app.c b/port/user_mb_app.c
+index 47cc20f..571df4e 100644
+--- a/port/user_mb_app.c
++++ b/port/user_mb_app.c
+@@ -136,8 +136,8 @@ eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
+         /* write current register values with new values from the protocol stack. */
+         case MB_REG_WRITE:
+ 	    {
+-		typeof(iRegIndex) tmp_index = iRegIndex;
+-		typeof(usNRegs) tmp_n       = usNRegs;
++                typeof(usNRegs) reg_num = usNRegs;
++
+ 		while (usNRegs > 0)
+ 		{
+ 		    pusRegHoldingBuf[iRegIndex] = *pucRegBuffer++ << 8;
+@@ -146,7 +146,7 @@ eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
+ 		    usNRegs--;
+ 		}
+ 		md_event_send(MD_EVENT_REG_WRITE, MD_HOLDING_REG,
+-				tmp_index, tmp_n, &pusRegHoldingBuf[tmp_index]);
++				usAddress, reg_num, pusRegHoldingBuf);
+     	    }
+                 break;
+         }
+@@ -213,14 +213,13 @@ eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
+             /* write current coil values with new values from the protocol stack. */
+         case MB_REG_WRITE:
+ 	{
+-	    typeof(iRegIndex) tmp_reg_index = iRegIndex;
+             while (iNReg > 1)
+             {
+                 xMBUtilSetBits(&pucCoilBuf[iRegIndex++], iRegBitIndex, 8,
+                         *pucRegBuffer++);
+                 iNReg--;
+             }
+-	    md_event_send(MD_EVENT_REG_WRITE, MD_COIL, tmp_reg_index, usNCoils, &pucCoilBuf[tmp_reg_index]);
++	    md_event_send(MD_EVENT_REG_WRITE, MD_COIL, usAddress, usNCoils, pucCoilBuf);
+             /* last coils */
+             usNCoils = usNCoils % 8;
+             /* xMBUtilSetBits has bug when ucNBits is zero */
+-- 
+2.25.1
+
