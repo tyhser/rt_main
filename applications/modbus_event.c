@@ -2,6 +2,7 @@
 #include <rtdevice.h>
 #include "modbus_event.h"
 #include "app_modbus_slave.h"
+#include "easyblink.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_md_eventAG      "md_event"
@@ -11,6 +12,7 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
+extern ebled_t led0;
 static rt_mq_t mq;
 
 void md_event_init(void)

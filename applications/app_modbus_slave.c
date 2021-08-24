@@ -10,7 +10,7 @@
 
 #include <rtthread.h>
 #include <string.h>
-
+#include "easyblink.h"
 #include "app_modbus_slave.h"
 
 #ifndef ULOG_USING_SYSLOG
@@ -34,6 +34,7 @@
 #define MODBUS_POLL_PRI         RT_MAIN_THREAD_PRIORITY - 1
 #define APP_THREAD_TIMESLICE    5
 
+extern ebled_t led0;
 
 struct rt_mailbox modbus_ind_mailbox;
 static char mailbox_pool[128];
