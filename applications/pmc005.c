@@ -268,7 +268,7 @@ void pmc_robot_init(uint8_t station_addr)
 #if MBP
 	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM2j2m120V20000D25000z0aM4m100L1000V64000Z50000R\r";
 #else
-	uint8_t cmd[] = "/1n3aM3j16m120L120h50V16000Z60000V64000aM1j16m120L100h20V16000Z120000V64000aM2j16m120L110h20V16000Z100000V64000aM4j16m125L1000V45000Z65000P25000z0R\r";
+	uint8_t cmd[] = "/1n3aM3j16m120L120h50V16000Z60000V64000aM1j16m120L100h20V16000Z120000V64000aM2j16m120L110h20V16000Z100000V64000aM4j16m125L900V30000Z65000P25000z0R\r";
 #endif
 	uint8_t recv[128] = {0};
 	cmd[1] = get_hex_ch(station_addr);
@@ -519,7 +519,12 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
 	struct response_info info = {0};
-#define PP_CMD "Z45500gP46000D45500G"
+	uint32_t prev_speed = 0;
+
+	pmc_select_motor(MOTOR_4, station_addr);
+	prev_speed = pmc_get_current_motor_max_speed();
+
+#define PP_CMD "V45000Z45500gP46000D45500G"
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
@@ -539,6 +544,7 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 			break;
 		rt_thread_mdelay(300);
 	}
+	pmc_set_current_motor_speed(station_addr, prev_speed);
 
 #undef PP_CMD
 }
