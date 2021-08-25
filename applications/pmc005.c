@@ -83,12 +83,14 @@ int pmc_send_then_recv(uint8_t *read_cmd, int len, void *buf, int recv_size)
 	int recv_len = rs485_send_then_recv(hinst, (void *)read_cmd, len, buf, recv_size);
         if (recv_len < 0) {
 		LOG_E("rs485 station:%d send datas error.", station_addr);
+		easyblink(led0, 10, 200, 400);
 		mb_set_device_online_state(station_addr, SLAVE_ONLINE_ERROR);
 		return recv_len;
         }
 
         if (recv_len == 0) {
-		LOG_D("rs485 station:%d recv timeout.", station_addr);
+		LOG_E("rs485 station:%d recv timeout.", station_addr);
+		easyblink(led0, 10, 200, 400);
 		mb_set_device_online_state(station_addr, SLAVE_ONLINE_CONNECTION_TIMEOUT);
 		return recv_len;
         }
@@ -374,6 +376,7 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 {
 	if (id > 4) {
 		LOG_E("unkown motor id home");
+		easyblink(led0, 10, 200, 400);
 		return;
 	}
 	uint8_t cmd[] = "/1aM1V12000Z120000R\r";
