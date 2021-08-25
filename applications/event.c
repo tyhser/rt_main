@@ -285,7 +285,20 @@ void md_hold_reg_write_handle(struct md_event *event)
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
 		case ROBOT_ABS:
-			pmc_motor_z_abs(ROBOT_ADDR, 0);
+		{
+			int32_t x_pos = 0;
+			int32_t y_pos = 0;
+
+			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
+			x_pos = pmc_get_current_motor_position();
+			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
+			y_pos = pmc_get_current_motor_position();
+
+			if ((X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)) != x_pos) ||
+				(Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)) != y_pos)) {
+				pmc_motor_z_abs(ROBOT_ADDR, 0);
+			}
+
 			if (REG_VALUE(HOLD_REG_X_AXIS) > X_AXIS_LENGTH) {
 				LOG_W("X axis move over length");
 				break;
@@ -297,6 +310,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 			pmc_motor_xy_abs(ROBOT_ADDR,
 					X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)),
 					Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
+		}
 			break;
 		case ROBOT_STOP:
 			pmc_stop(ROBOT_ADDR);
