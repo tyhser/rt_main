@@ -43,8 +43,11 @@ extern ebled_t led0;
 
 #define REG_SLAVE_AXIS_ONLINE		(usSRegInBuf[4])
 
-#define PMC_BUSY	1
-#define PMC_FREE	0
+enum motor_status {
+	MOTOR_OK,
+	MOTOR_ERROR,
+	MOTOR_BUSY
+};
 
 enum pmc_status {
 	PMC_OK				= 0,
@@ -214,6 +217,28 @@ enum pmc_status get_pmc_status(uint8_t *recv, int len)
 	return (info.status & 0x0F);
 }
 
+void pmc_mb_set_motor_state(enum motor_id id, enum motor_status state)
+{
+	switch (id) {
+	case MOTOR_1:
+		REG_XY_AXIS_STATE = state;
+	break;
+	case MOTOR_2:
+		REG_XY_AXIS_STATE = state;
+	break;
+	case MOTOR_3:
+		REG_Z_AXIS_STATE = state;
+		LOG_I("z axis state:%d", REG_Z_AXIS_STATE);
+	break;
+	case MOTOR_4:
+		REG_SYRING_STATE = state;
+	break;
+	default:
+		LOG_E("Unknow motor when set MB state");
+	break;
+	}
+}
+
 void pmc_update_motor_state(struct response_info *info)
 {
 	uint8_t busy_state = info->data[0] - '0';
@@ -224,17 +249,17 @@ void pmc_update_motor_state(struct response_info *info)
 	rt_enter_critical();
 
 	if ((busy_state & 0x01) || (busy_state & 0x02))
-		REG_XY_AXIS_STATE = PMC_BUSY;
+		REG_XY_AXIS_STATE = MOTOR_BUSY;
 	else
-		REG_XY_AXIS_STATE = PMC_FREE;
+		REG_XY_AXIS_STATE = MOTOR_OK;
 	if (busy_state & 0x04)
-		REG_Z_AXIS_STATE = PMC_BUSY;
+		REG_Z_AXIS_STATE = MOTOR_BUSY;
 	else
-		REG_Z_AXIS_STATE = PMC_FREE;
+		REG_Z_AXIS_STATE = MOTOR_OK;
 	if (busy_state & 0x08)
-		REG_SYRING_STATE = PMC_BUSY;
+		REG_SYRING_STATE = MOTOR_BUSY;
 	else
-		REG_SYRING_STATE = PMC_FREE;
+		REG_SYRING_STATE = MOTOR_OK;
 
 	REG_PMC_STATE = pmc_status;
 
@@ -293,8 +318,8 @@ int pmc_is_motor_busy(uint8_t station_addr, enum motor_id id)
 
 	len = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, len);
+	pmc_update_motor_state(&info);
 	REG_PMC_STATE = info.status & 0x0F;
-
 	if (info.data[0] & (0x01 << id))
 		return 1;
 	else
@@ -382,13 +407,18 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 	uint8_t cmd[] = "/1aM1V12000Z120000R\r";
 	uint8_t recv[128] = {0};
 	uint32_t prev_speed = 0;
+	int ret = 0;
 
 	pmc_select_motor(id, station_addr);
 	prev_speed = pmc_get_current_motor_max_speed();
 
+	pmc_mb_set_motor_state(id, MOTOR_BUSY);
 	cmd[1] = get_hex_ch(station_addr);
 	cmd[4] = (uint8_t)(1 + id + '0');
-	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	ret = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	if (ret == 0)
+		pmc_mb_set_motor_state(id, MOTOR_ERROR);
+
 	pmc_block_wait_motor_free(station_addr, id);
 
 	pmc_set_current_motor_speed(station_addr, prev_speed);
