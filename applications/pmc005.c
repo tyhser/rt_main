@@ -573,7 +573,7 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 	pmc_get_response_info(&info, recv, 128);
 
 	for (int i = 0; i < 100; i++) {
-		if (!pmc_is_robot_busy(station_addr, Z_AXIS))
+		if (!pmc_is_robot_busy(station_addr, SYRING))
 			break;
 		rt_thread_mdelay(300);
 	}
