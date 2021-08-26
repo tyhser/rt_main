@@ -596,6 +596,7 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 
 int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 {
+	LOG_I("enter pmc_motor_speed_mode:(%d %d %d)", station_addr, motor_id, speed);
 	uint8_t num_str[25] = {0};
 	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
@@ -620,6 +621,8 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
 
+	//LOG_I("cmd:%s", cmd);
+	rt_thread_mdelay(60);
 	send_result = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	return send_result;
 }
