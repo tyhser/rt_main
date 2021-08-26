@@ -54,21 +54,20 @@ ebled_t beep	= RT_NULL;
 
 int main(void)
 {
-	app_md_slave_init();
-	md_event_init();
-	event_init();
-	pmc_init();
-	valve_init();
-	rt_kprintf("commit id: "GIT_DESC"\n");
-	pc_on_off();
-
 	led0	= easyblink_init_led(LED0, PIN_HIGH);
 	red	= easyblink_init_led(RED, PIN_HIGH);
 	green	= easyblink_init_led(GREEN, PIN_HIGH);
 	yellow	= easyblink_init_led(YELLOW, PIN_HIGH);
 	beep	= easyblink_init_led(BEEP, PIN_HIGH);
-
 	easyblink(led0, -1, 500, 1000);
+
+	app_md_slave_init();
+	md_event_init();
+	event_init();
+	pmc_init();
+	valve_init();
+	rt_kprintf("application version: "GIT_DESC"\n");
+	pc_on_off();
 
 	return RT_EOK;
 }
