@@ -135,7 +135,7 @@ int modbus_addr_to_pmc_addr(int addr)
 		return 0;
 	}
 	/*sampler pmc addr from 3, deliver addr is 2*/
-	return (2 + (addr - 48) / 2);
+	return (3 + (addr - 48) / 2);
 }
 
 int find_valve_modbus_addr_seat(int addr)
@@ -149,11 +149,11 @@ int find_valve_modbus_addr_seat(int addr)
 		return 0;
 	}
 
-	pmc_valve_start_addr = (addr - sampler_modbus_start_addr) / valve_num_per_pmc;
-	if (pmc_valve_start_addr == addr)
-		return 0;
-	else
+	pmc_valve_start_addr = (addr - sampler_modbus_start_addr) % valve_num_per_pmc;
+	if (pmc_valve_start_addr)
 		return 1;
+	else
+		return 0;
 }
 
 void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
@@ -199,6 +199,7 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 			((uint8_t)COIL_ADDR_VALUE(44+16, 2) << 2)|
 			((uint8_t)COIL_ADDR_VALUE(44+16, 3) << 3);
 
+			LOG_I("slave (2), valve:(0x%x)", deliver_valve_value);
 			deliver_set_valve(2, deliver_valve_value);
 		}
 		if ((valve_index >= 48) && (valve_index <= 63)) {
@@ -223,6 +224,7 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 				v2 = bit_value;
 			} else {
 			}
+			LOG_I("slave (%d), valve:(0x%x)", station_addr, (v1 & 0x01) | ((v2 & 0x01) << 1));
 			pmc_set_valve(station_addr, (v1 & 0x01) | ((v2 & 0x01) << 1));
 		}
 	}
