@@ -426,7 +426,7 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 
 uint32_t get_x_axis_max_speed_by_length(int32_t x)
 {
-	uint32_t speed = ((x * 3200 / 335) + 32000);
+	uint32_t speed = ((x * 320 / 335) + 32000);
 	LOG_I("x:%d must speed:%d", x, speed);
 
 	if (speed > 64000)
