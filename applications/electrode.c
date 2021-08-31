@@ -47,7 +47,7 @@ rt_int32_t electrode_get_data(rt_uint32_t ch)
 
 float get_resistance_by_adc_data(int64_t data)
 {
-	return (float)(data * 33000) / (2 * CONVERT_BITS - data);
+	return (float)(data * 100000) / (2 * CONVERT_BITS - data);
 }
 
 static int electrode_vol_sample(int argc, char *argv[])
