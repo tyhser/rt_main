@@ -642,11 +642,17 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 
 	if (speed > 0)
-		*(cmd_pos + strlen((char *)cmd_pos)) = 'P';
+		*(cmd_pos + strlen((char *)cmd_pos)) = 'C';
 	else
-		*(cmd_pos + strlen((char *)cmd_pos)) = 'D';
+		*(cmd_pos + strlen((char *)cmd_pos)) = 'E';
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '0';
+
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'O';
+	if (speed == 0)
+		*(cmd_pos + strlen((char *)cmd_pos)) = '0';
+	else
+		*(cmd_pos + strlen((char *)cmd_pos)) = '1';
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
