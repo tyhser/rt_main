@@ -135,7 +135,7 @@ int modbus_addr_to_pmc_addr(int addr)
 		return 0;
 	}
 	/*sampler pmc addr from 3, deliver addr is 2*/
-	return (2 + (addr - 48) / 2);
+	return (3 + (addr - 48) / 2);
 }
 
 int find_valve_modbus_addr_seat(int addr)
