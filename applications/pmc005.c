@@ -557,7 +557,11 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 	pmc_select_motor(MOTOR_4, station_addr);
 	prev_speed = pmc_get_current_motor_max_speed();
 
-#define PP_CMD "V45000Z45500gP46000D45500G"
+#ifdef APP_USING_PISTON_PUMP
+#define PP_CMD "V34000Z64000gP32000D32000G"
+#else
+#define PP_CMD "V45000Z64000gP46000D46000G"
+#endif
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
