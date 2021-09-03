@@ -2,7 +2,12 @@
 #define _PMC005_H_
 #include <rtthread.h>
 
-#define SYRING_LEAD_UL		334.8309
+#ifdef APP_USING_PISTON_PUMP
+#define SYRING_LEAD_UL		500
+#else
+#define SYRING_LEAD_UL		333.3333
+#endif
+
 #define SYRING_SUB_PULSE	16
 #define Z_LEAD_MM		18.8495
 #define Z_SUB_PULSE		16
