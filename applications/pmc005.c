@@ -368,7 +368,7 @@ void pmc_block_wait_motor_free(uint8_t station_addr, enum motor_id id)
 	}
 }
 
-uint32_t pmc_get_current_motor_position(void)
+int32_t pmc_get_current_motor_position(void)
 {
 	uint8_t cmd[] = "/1?0\r";
 	uint8_t recv[128] = {0};
@@ -379,8 +379,17 @@ uint32_t pmc_get_current_motor_position(void)
 	pmc_get_response_info(&info, recv, 128);
 
 	position = atol((char *)info.data);
-	LOG_I("position:%u", position);
+	LOG_I("position:%ld", position);
 	return position;
+}
+
+int32_t pmc_get_motor_position(enum motor_id id)
+{
+	int32_t current_position = 0;
+
+	pmc_select_motor(id, ROBOT_ADDR);
+	current_position = pmc_get_current_motor_position();
+	return current_position;
 }
 
 uint32_t pmc_get_current_motor_max_speed(void)
@@ -439,15 +448,35 @@ uint32_t get_x_axis_max_speed_by_length(int32_t x)
 
 void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 {
+
 	uint8_t num_str[25] = {0};
 	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
 	struct response_info info = {0};
-
 	int32_t current_position = 0;
 	uint32_t prev_speed = 0;
 	uint32_t x_axis_speed = 0;
+	int32_t x_pos = 0;
+	int32_t y_pos = 0;
+
+	pmc_select_motor(MOTOR_1, ROBOT_ADDR);
+	x_pos = pmc_get_current_motor_position();
+	pmc_select_motor(MOTOR_2, ROBOT_ADDR);
+	y_pos = pmc_get_current_motor_position();
+
+	if ((x != x_pos) || (y != y_pos)) {
+		pmc_motor_z_abs(ROBOT_ADDR, 0);
+	}
+
+	if (x > X_AXIS_PULSE(X_AXIS_LENGTH)) {
+		LOG_W("X axis move over length");
+		return;
+	}
+	if (y > Y_AXIS_PULSE(Y_AXIS_LENGTH)) {
+		LOG_W("Y axis move over length");
+		return;
+	}
 
 	pmc_select_motor(MOTOR_1, ROBOT_ADDR);
 	current_position = pmc_get_current_motor_position();
@@ -625,6 +654,17 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	pmc_select_motor(motor_id, station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_block_wait_motor_free(station_addr, motor_id);
+	return 0;
+}
+
+int pmc_motor_jog(uint8_t station_addr, uint8_t motor_id, int32_t pos)
+{
+	if (pos == 0)
+		return 0;
+	if (pos > 0)
+		pmc_motor_fwd(station_addr, motor_id, pos);
+	else
+		pmc_motor_rev(station_addr, motor_id, abs(pos));
 	return 0;
 }
 

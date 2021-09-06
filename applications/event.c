@@ -82,7 +82,6 @@ enum robot_status {
 
 extern void set_valve(int id, int val);
 extern void temperature_control_enable_disable(int val);
-extern struct rt_mailbox modbus_ind_mailbox;
 static struct rt_thread *event_thread;
 
 extern ebled_t red;
@@ -290,27 +289,6 @@ void md_hold_reg_write_handle(struct md_event *event)
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
 		case ROBOT_ABS:
 		{
-			int32_t x_pos = 0;
-			int32_t y_pos = 0;
-
-			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
-			x_pos = pmc_get_current_motor_position();
-			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
-			y_pos = pmc_get_current_motor_position();
-
-			if ((X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)) != x_pos) ||
-				(Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)) != y_pos)) {
-				pmc_motor_z_abs(ROBOT_ADDR, 0);
-			}
-
-			if (REG_VALUE(HOLD_REG_X_AXIS) > X_AXIS_LENGTH) {
-				LOG_W("X axis move over length");
-				break;
-			}
-			if (REG_VALUE(HOLD_REG_Y_AXIS) > Y_AXIS_LENGTH) {
-				LOG_W("Y axis move over length");
-				break;
-			}
 			pmc_motor_xy_abs(ROBOT_ADDR,
 					X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)),
 					Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)));
@@ -330,8 +308,8 @@ void md_hold_reg_write_handle(struct md_event *event)
 			break;
 		case ROBOT_FWD:
 			pmc_motor_z_abs(ROBOT_ADDR, 0);
-			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+
+			current_position = pmc_get_motor_position(MOTOR_1);
 
 			if (X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)) + current_position
 					> X_AXIS_PULSE(X_AXIS_LENGTH))
@@ -339,8 +317,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 			else
 				pmc_motor_fwd(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
 
-			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+			current_position = pmc_get_motor_position(MOTOR_2);
 
 			if (Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)) + current_position
 					> Y_AXIS_PULSE(Y_AXIS_LENGTH))
@@ -350,16 +327,14 @@ void md_hold_reg_write_handle(struct md_event *event)
 			break;
 		case ROBOT_RCV:
 			pmc_motor_z_abs(ROBOT_ADDR, 0);
-			pmc_select_motor(MOTOR_1, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+			current_position = pmc_get_motor_position(MOTOR_1);
 
 			if ((current_position - X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS))) < 0)
 				LOG_W("X axis invalid position");
 			else
 				pmc_motor_rev(ROBOT_ADDR, MOTOR_1, X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)));
 
-			pmc_select_motor(MOTOR_2, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+			current_position = pmc_get_motor_position(MOTOR_2);
 
 			if ((current_position - Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS))) < 0)
 				LOG_W("Y axis invalid position");
@@ -379,8 +354,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
 		case ROBOT_FWD:
-			pmc_select_motor(MOTOR_3, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+			current_position = pmc_get_motor_position(MOTOR_3);
 
 			if ((current_position + Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)))
 					> Z_AXIS_PULSE(Z_AXIS_LENGTH))
@@ -389,8 +363,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 				pmc_motor_fwd(ROBOT_ADDR, MOTOR_3, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
 			break;
 		case ROBOT_RCV:
-			pmc_select_motor(MOTOR_3, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+			current_position = pmc_get_motor_position(MOTOR_3);
 
 			if ((current_position - Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS))) < 0)
 				LOG_W("Z axis invalid position");
@@ -411,7 +384,6 @@ void md_hold_reg_write_handle(struct md_event *event)
 				LOG_W("Z axis move over length");
 			else
 				pmc_motor_z_abs(ROBOT_ADDR, Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
-
 			break;
 		default:
 			LOG_E("Unkow cmd");
@@ -429,8 +401,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 				pmc_motor_syring_abs(ROBOT_ADDR, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
 			break;
 		case ROBOT_FWD:
-			pmc_select_motor(MOTOR_4, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+			current_position = pmc_get_motor_position(MOTOR_4);
 
 			if (SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) + current_position
 					> SYRING_PULSE(SYRING_LENGTH))
@@ -439,8 +410,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 				pmc_motor_fwd(ROBOT_ADDR, MOTOR_4, SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)));
 			break;
 		case ROBOT_RCV:
-			pmc_select_motor(MOTOR_4, ROBOT_ADDR);
-			current_position = pmc_get_current_motor_position();
+			current_position = pmc_get_motor_position(MOTOR_4);
 
 			if (current_position - SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) < 0)
 				LOG_W("Syring invalid position");
