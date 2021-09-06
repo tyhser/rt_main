@@ -6,13 +6,14 @@
 extern "C" {
 #endif
 
-enum motor_ser_event_id {
+enum motor_ser_id {
 	XY_ABS,
 	Z_ABS,
 	SYRING_ABS,
 	STOP_ALL,
 	MOTOR_JOG,
 	MOTOR_HOME,
+	SYRING_PP
 };
 
 typedef struct {
@@ -35,13 +36,20 @@ typedef union {
 
 } motor_server_param_t;
 
+typedef void (*post_result_t)(void *param);
+
 struct motor_ser_event {
-    enum motor_ser_event_id id;
+    enum motor_ser_id id;
     motor_server_param_t parameters;
     post_result_t post_callback;
 
 };
 typedef struct motor_ser_event *motor_ser_event_t;
+
+void motor_server_post(enum motor_ser_id id, motor_server_param_t *param);
+
+void motor_server_z_abs(int32_t pos);
+void motor_server_syring_abs(int32_t pos);
 
 #ifdef __cplusplus
 }

@@ -619,20 +619,24 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 {
 	if (pos == 0)
 		return 0;
-
-	uint8_t cmd[25] = {0};
+	uint8_t num_str[25] = {0};
+	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
-	struct cmd_line_info cmd_info = {
-		.addr = station_addr,
-		.cmd = "P",
-		.data = pos,
-	};
+	uint8_t *cmd_pos = &cmd[0];
 
-	pmc_make_cmd_line(&cmd_info, cmd, 25);
+	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
+	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
+	*(cmd_pos + strlen((char *)cmd_pos)) = '1' + motor_id;
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'P';
+	sprintf((char *)num_str, "%ld", pos);
+	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
+	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
 
-	pmc_select_motor(motor_id, station_addr);
-	LOG_I("%s", cmd_info.cmd);
+	LOG_I("%s", cmd);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	return 0;
 }
@@ -642,19 +646,26 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	if (pos == 0)
 		return 0;
 
-	uint8_t cmd[25] = {0};
+	uint8_t num_str[25] = {0};
+	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
-	struct cmd_line_info cmd_info = {
-		.addr = station_addr,
-		.cmd = "D",
-		.data = pos,
-	};
+	uint8_t *cmd_pos = &cmd[0];
 
-	pmc_make_cmd_line(&cmd_info, cmd, 25);
-	pmc_select_motor(motor_id, station_addr);
-	LOG_I("%s", cmd_info.cmd);
+	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
+	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
+	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
+	*(cmd_pos + strlen((char *)cmd_pos)) = '1' + motor_id;
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'D';
+	sprintf((char *)num_str, "%ld", pos);
+	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
+	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
+
+	LOG_I("%s", cmd);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+
 	pmc_block_wait_motor_free(station_addr, motor_id);
+
 	return 0;
 }
 
