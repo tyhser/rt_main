@@ -631,6 +631,7 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	pmc_make_cmd_line(&cmd_info, cmd, 25);
 
 	pmc_select_motor(motor_id, station_addr);
+	LOG_I("%s", cmd_info.cmd);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	return 0;
@@ -650,8 +651,8 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	};
 
 	pmc_make_cmd_line(&cmd_info, cmd, 25);
-
 	pmc_select_motor(motor_id, station_addr);
+	LOG_I("%s", cmd_info.cmd);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	return 0;
