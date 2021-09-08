@@ -15,6 +15,10 @@
 #include <syslog.h>
 #endif /* ULOG_USING_SYSLOG */
 
+#ifndef ARRAY_SIZE
+# define ARRAY_SIZE(ar) (sizeof(ar) / sizeof(ar[0]))
+#endif
+
 #define HOLD_REG_X_AXIS		180
 #define HOLD_REG_Y_AXIS		181
 #define HOLD_REG_XY_CMD		182
@@ -196,7 +200,7 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 			deliver_valve_value =
 			((uint8_t)COIL_ADDR_VALUE(44+16, 0)) |
 			((uint8_t)COIL_ADDR_VALUE(44+16, 1) << 1) |
-			((uint8_t)COIL_ADDR_VALUE(44+16, 2) << 2)|
+			((uint8_t)COIL_ADDR_VALUE(44+16, 2) << 2) |
 			((uint8_t)COIL_ADDR_VALUE(44+16, 3) << 3);
 
 			deliver_set_valve(2, deliver_valve_value);
@@ -280,7 +284,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 
 	print_hold_reg(addr, cnt, event->reg);
 #define REG(mb_addr) (event->reg[(mb_addr) - S_REG_HOLDING_START])
-#define REG_VALUE(mb_addr) get_holding_value((mb_addr), event->holding_reg_obj, 10)
+#define REG_VALUE(mb_addr) get_holding_value((mb_addr), event->holding_reg_obj, ARRAY_SIZE(event->holding_reg_obj))
 	switch (addr) {
 	case HOLD_REG_X_AXIS ... HOLD_REG_XY_CMD:
 		switch (REG_VALUE(HOLD_REG_XY_CMD)) {
@@ -465,8 +469,12 @@ void md_hold_reg_write_handle(struct md_event *event)
 		/*pmc pumb speed control*/
 	case 190 ... 214:
 	{
-		struct pmc_pumb *pmc_pumb = get_pmc_pumb_struct(addr);
-		pmc_motor_speed_mode(pmc_pumb->pmc_addr, pmc_pumb->pmc_motor_id, REG_VALUE(addr));
+		struct pmc_pumb *pmc_pumb = NULL;
+
+		for (int i = 0; i < cnt; i++) {
+			pmc_pumb = get_pmc_pumb_struct(addr + i);
+			pmc_motor_speed_mode(pmc_pumb->pmc_addr, pmc_pumb->pmc_motor_id, REG_VALUE(addr + i));
+		}
 	}
 		break;
 	default:

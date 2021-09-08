@@ -35,7 +35,7 @@ int md_event_send(enum md_rw rw, enum md_cmd_type reg_type, uint32_t start_addr,
 		.reg = reg,
 	};
 
-	for (int i = 0; i < sizeof(msg.holding_reg_obj) / sizeof(msg.holding_reg_obj[0]); i++) {
+	for (int i = 0; i < reg_cnt; i++) {
 		msg.holding_reg_obj[i].md_addr = start_addr + i;
 		msg.holding_reg_obj[i].value = ((uint16_t *)reg)[start_addr - S_REG_HOLDING_START + i];
 	}
