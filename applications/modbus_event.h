@@ -29,7 +29,7 @@ struct md_event {
 	uint32_t start_addr;
 	size_t reg_cnt;
 	uint16_t *reg;
-	struct md_reg_obj holding_reg_obj[4];
+	struct md_reg_obj holding_reg_obj[25];
 };
 
 void md_event_init(void);
