@@ -5,7 +5,7 @@
 #ifdef APP_USING_PISTON_PUMP
 #define SYRING_LEAD_UL		500
 #else
-#define SYRING_LEAD_UL		333.3333
+#define SYRING_LEAD_UL		(1000/3)
 #endif
 
 #define SYRING_SUB_PULSE	16

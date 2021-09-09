@@ -245,6 +245,5 @@
 
 /* Replaceable physical module */
 
-#define APP_USING_PISTON_PUMP
 
 #endif

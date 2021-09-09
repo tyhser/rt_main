@@ -237,7 +237,7 @@ void md_coil_write_handle(uint32_t addr, ssize_t cnt, uint8_t *reg)
 
 void print_hold_reg(uint32_t addr, ssize_t cnt, uint16_t *reg)
 {
-	rt_kprintf("\nwrite: ");
+	rt_kprintf("write: ");
 	for (int i = addr; i < addr + cnt; i++) {
 		rt_kprintf("%d:%d ", i, reg[(i) - S_REG_HOLDING_START]);
 	}
@@ -456,29 +456,16 @@ void md_hold_reg_write_handle(struct md_event *event)
 			}
 			break;
 		case ROBOT_FWD:
-			current_position = pmc_get_motor_position(MOTOR_4);
-
-			if (SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) + current_position
-					> SYRING_PULSE(SYRING_LENGTH)) {
-				LOG_W("Syring move over length");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING));
-				param.motor_move.motor_id = MOTOR_4;
-				motor_server_post(MOTOR_JOG, &param);
-			}
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING));
+			param.motor_move.motor_id = MOTOR_4;
+			motor_server_post(MOTOR_JOG, &param);
 			break;
 		case ROBOT_RCV:
-			current_position = pmc_get_motor_position(MOTOR_4);
-
-			if (current_position - SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING)) < 0) {
-				LOG_W("Syring invalid position");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = -1 * SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING));
-				param.motor_move.motor_id = MOTOR_4;
-				motor_server_post(MOTOR_JOG, &param);
-			}
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = -1 * SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING));
+			param.motor_move.motor_id = MOTOR_4;
+			motor_server_post(MOTOR_JOG, &param);
 			break;
 		case ROBOT_STOP:
 			param.motor_move.station_addr = ROBOT_ADDR;

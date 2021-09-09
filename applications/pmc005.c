@@ -137,6 +137,29 @@ int pmc_make_cmd_line(struct cmd_line_info *cmd_info, uint8_t *cmd_line, int len
 	return strlen((char *)cmd_line);
 }
 
+static inline int32_t motor_route_in_pulse(enum motor_id id, int32_t route)
+{
+	int32_t pulses = 0;
+
+	switch (id) {
+	case MOTOR_1:
+		pulses = X_AXIS_PULSE(route);
+	break;
+	case MOTOR_2:
+		pulses = Y_AXIS_PULSE(route);
+	break;
+	case MOTOR_3:
+		pulses = Z_AXIS_PULSE(route);
+	break;
+	case MOTOR_4:
+		pulses = SYRING_PULSE(route);
+	break;
+	default:
+	break;
+	}
+	return pulses;
+}
+
 void pmc_set_current_motor_speed(int station_addr, uint32_t speed)
 {
 	uint8_t cmd[25] = {0};
@@ -155,6 +178,7 @@ void pmc_select_motor(enum motor_id id, int station_addr)
 {
 	uint8_t cmd[25] = {0};
 	uint8_t recv[128] = {0};
+	int result = 0;
 	struct cmd_line_info cmd_info = {
 		.addr = station_addr,
 		.cmd = "aM",
@@ -162,7 +186,9 @@ void pmc_select_motor(enum motor_id id, int station_addr)
 	};
 
 	pmc_make_cmd_line(&cmd_info, cmd, 25);
-	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	LOG_I("%s", cmd);
+	result = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	LOG_HEX("<=", 16, recv, result);
 }
 
 int pmc_motor_absolute_position(uint8_t station_addr, uint8_t motor_id, int32_t pos)
@@ -374,8 +400,11 @@ int32_t pmc_get_current_motor_position(void)
 	uint8_t recv[128] = {0};
 	struct response_info info = {0};
 	uint32_t position = 0;
+	int result = 0;
 
-	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	LOG_I("%s", cmd);
+	result =  pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	LOG_HEX("<=", 16, recv, result);
 	pmc_get_response_info(&info, recv, 128);
 
 	position = atol((char *)info.data);
@@ -624,6 +653,13 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
 
+	int32_t current_position = pmc_get_motor_position(motor_id);
+
+	if (motor_route_in_pulse(motor_id, pos) + current_position > motor_route_in_pulse(motor_id, SYRING_LENGTH)) {
+		LOG_W("fwd ERROR syring move to:%d", motor_route_in_pulse(motor_id, pos) + current_position);
+		return 0;
+	}
+
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
@@ -650,6 +686,13 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
+
+	int32_t current_position = pmc_get_motor_position(motor_id);
+
+	if (current_position < motor_route_in_pulse(motor_id, pos)) {
+		LOG_W("rcv ERROR syring move to:%d", current_position - SYRING_PULSE(pos));
+		return 0;
+	}
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
