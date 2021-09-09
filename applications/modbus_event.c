@@ -35,9 +35,11 @@ int md_event_send(enum md_rw rw, enum md_cmd_type reg_type, uint32_t start_addr,
 		.reg = reg,
 	};
 
-	for (int i = 0; i < reg_cnt; i++) {
-		msg.holding_reg_obj[i].md_addr = start_addr + i;
-		msg.holding_reg_obj[i].value = ((uint16_t *)reg)[start_addr - S_REG_HOLDING_START + i];
+	if (reg_type == MD_HOLDING_REG) {
+		for (int i = 0; i < reg_cnt; i++) {
+			msg.holding_reg_obj[i].md_addr = start_addr + i;
+			msg.holding_reg_obj[i].value = ((uint16_t *)reg)[start_addr - S_REG_HOLDING_START + i];
+		}
 	}
 
 	result = rt_mq_send_wait(mq, &msg, sizeof(msg), RT_WAITING_FOREVER);
