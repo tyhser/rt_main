@@ -78,6 +78,22 @@ void set_valve(int id, int val)
 	}
 }
 
+void valve_set(int argc, char *argv[])
+{
+	uint32_t id = 0;
+	int value = 0;
+
+	if (argc == 3) {
+		id = atol((char *)argv[1]);
+		value = argv[2][0] - '0';
+		set_valve(id, value);
+
+	} else {
+		rt_kprintf("usage: valve_set [num] [1|0]\n");
+	}
+}
+MSH_CMD_EXPORT(valve_set, set valve);
+
 void sw_input_change(void *args)
 {
 	int value = rt_pin_read(sw_input_map[(int)args]);;

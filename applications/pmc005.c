@@ -32,6 +32,8 @@ enum slave_online_state {
 	SLAVE_ONLINE_ERROR,
 };
 
+void set_valve(int id, int val);
+int pmc_is_robot_busy(uint8_t station_addr, enum axis_id id);
 extern uint16_t usSRegInBuf[S_REG_INPUT_NREGS];
 extern ebled_t led0;
 
@@ -42,6 +44,8 @@ extern ebled_t led0;
 #define REG_PMC_STATE			(usSRegInBuf[3])
 
 #define REG_SLAVE_AXIS_ONLINE		(usSRegInBuf[4])
+#define BREAK_OPEN			set_valve(31, 1)
+#define BREAK_CLOSE			set_valve(31, 0)
 
 enum motor_status {
 	MOTOR_OK,
@@ -291,7 +295,6 @@ void pmc_robot_home(uint8_t station_addr)
 
 void pmc_robot_init(uint8_t station_addr)
 {
-
 #if MBP
 	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM2j2m120V20000D25000z0aM4m100L1000V64000Z50000R\r";
 #else
@@ -300,6 +303,13 @@ void pmc_robot_init(uint8_t station_addr)
 	uint8_t recv[128] = {0};
 	cmd[1] = get_hex_ch(station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, XY_AXIS) &&
+				!pmc_is_robot_busy(station_addr, Z_AXIS) &&
+				!pmc_is_robot_busy(station_addr, SYRING))
+			break;
+		rt_thread_mdelay(300);
+	}
 }
 
 int pmc_is_motor_busy(uint8_t station_addr, enum motor_id id)
@@ -411,7 +421,9 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 
 	pmc_select_motor(id, station_addr);
 	prev_speed = pmc_get_current_motor_max_speed();
-
+	if (id == MOTOR_3) {
+		BREAK_OPEN;
+	}
 	pmc_mb_set_motor_state(id, MOTOR_BUSY);
 	cmd[1] = get_hex_ch(station_addr);
 	cmd[4] = (uint8_t)(1 + id + '0');
@@ -420,7 +432,9 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 		pmc_mb_set_motor_state(id, MOTOR_ERROR);
 
 	pmc_block_wait_motor_free(station_addr, id);
-
+	if (id == MOTOR_3) {
+		BREAK_CLOSE;
+	}
 	pmc_set_current_motor_speed(station_addr, prev_speed);
 }
 
@@ -507,7 +521,7 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
-
+	BREAK_OPEN;
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
 
@@ -516,6 +530,7 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 			break;
 		rt_thread_mdelay(300);
 	}
+	BREAK_CLOSE;
 }
 
 void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
@@ -601,9 +616,15 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 
 	pmc_make_cmd_line(&cmd_info, cmd, 25);
 
+	if (motor_id == MOTOR_3) {
+		BREAK_OPEN;
+	}
 	pmc_select_motor(motor_id, station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_block_wait_motor_free(station_addr, motor_id);
+	if (motor_id == MOTOR_3) {
+		BREAK_CLOSE;
+	}
 	return 0;
 }
 
@@ -621,10 +642,15 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	};
 
 	pmc_make_cmd_line(&cmd_info, cmd, 25);
-
+	if (motor_id == MOTOR_3) {
+		BREAK_OPEN;
+	}
 	pmc_select_motor(motor_id, station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_block_wait_motor_free(station_addr, motor_id);
+	if (motor_id == MOTOR_3) {
+		BREAK_CLOSE;
+	}
 	return 0;
 }
 
@@ -727,6 +753,8 @@ int pmc_init(void)
 		return -1;
     	}
 	rt_thread_mdelay(500);
+	BREAK_OPEN;
 	pmc_robot_init(1);
+	BREAK_CLOSE;
 	return 0;
 }
