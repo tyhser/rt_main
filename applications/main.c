@@ -64,8 +64,8 @@ int main(void)
 	app_md_slave_init();
 	md_event_init();
 	event_init();
-	pmc_init();
 	valve_init();
+	pmc_init();
 	rt_kprintf("application version: "GIT_DESC"\n");
 	pc_on_off();
 
