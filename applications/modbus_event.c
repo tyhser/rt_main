@@ -17,7 +17,7 @@ static rt_mq_t mq;
 
 void md_event_init(void)
 {
-	mq = rt_mq_create("md_mqt", sizeof(struct md_event), 256, RT_IPC_FLAG_FIFO);
+	mq = rt_mq_create("md_mqt", sizeof(struct md_event), 64, RT_IPC_FLAG_FIFO);
 
 	if (mq == NULL)
 		rt_kprintf("init message queue failed.\n");

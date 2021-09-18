@@ -5,7 +5,7 @@
 #ifdef APP_USING_PISTON_PUMP
 #define SYRING_LEAD_UL		500
 #else
-#define SYRING_LEAD_UL		333.3333
+#define SYRING_LEAD_UL		(1000/3)
 #endif
 
 #define SYRING_SUB_PULSE	16
@@ -58,14 +58,14 @@ struct response_info {
 
 int pmc_init(void);
 void pmc_select_motor(enum motor_id id, int station_addr);
-uint32_t pmc_get_current_motor_position(void);
+int32_t pmc_get_motor_position(enum motor_id id);
 uint32_t pmc_get_current_motor_max_speed(void);
 void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y);
 void pmc_motor_z_abs(uint8_t station_addr, int32_t pos);
 void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos);
 int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos);
-
 int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos);
+int pmc_motor_jog(uint8_t station_addr, uint8_t motor_id, int32_t pos);
 void pmc_stop(uint8_t station_addr);
 void pmc_robot_home(uint8_t station_addr);
 void pmc_motor_home(uint8_t station_addr, enum motor_id id);

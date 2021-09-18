@@ -13,6 +13,7 @@ event.c
 valve.c
 electrode.c
 temperature_controller.c
+motor_server.c
 """)
 
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)
