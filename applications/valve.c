@@ -1,4 +1,5 @@
 #include <board.h>
+#include <string.h>
 #include "app_modbus_slave.h"
 
 #ifndef ULOG_USING_SYSLOG

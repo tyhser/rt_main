@@ -278,7 +278,6 @@ void md_hold_reg_write_handle(struct md_event *event)
 		LOG_E("event is NULL");
 		return;
 	}
-	int32_t current_position = 0;
 	uint32_t addr = event->start_addr;
 	uint32_t cnt = event->reg_cnt;
 	motor_server_param_t param = {0};
@@ -330,55 +329,29 @@ void md_hold_reg_write_handle(struct md_event *event)
 		{
 			motor_server_z_abs(0);
 
-			current_position = pmc_get_motor_position(MOTOR_1);
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = REG_VALUE(HOLD_REG_X_AXIS);
+			param.motor_move.motor_id = MOTOR_1;
+			motor_server_post(MOTOR_JOG, &param);
 
-			if (X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS)) + current_position
-					> X_AXIS_PULSE(X_AXIS_LENGTH)) {
-				LOG_W("X axis move over length");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS));
-				param.motor_move.motor_id = MOTOR_1;
-				motor_server_post(MOTOR_JOG, &param);
-			}
-
-			current_position = pmc_get_motor_position(MOTOR_2);
-
-			if (Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS)) + current_position
-					> Y_AXIS_PULSE(Y_AXIS_LENGTH)) {
-				LOG_W("Y axis move over length");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS));
-				param.motor_move.motor_id = MOTOR_2;
-				motor_server_post(MOTOR_JOG, &param);
-			}
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = REG_VALUE(HOLD_REG_Y_AXIS);
+			param.motor_move.motor_id = MOTOR_2;
+			motor_server_post(MOTOR_JOG, &param);
 		}
 			break;
 		case ROBOT_RCV:
 			motor_server_z_abs(0);
 
-			current_position = pmc_get_motor_position(MOTOR_1);
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = -1 * X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS));
+			param.motor_move.motor_id = MOTOR_1;
+			motor_server_post(MOTOR_JOG, &param);
 
-			if ((current_position - X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS))) < 0) {
-				LOG_W("X axis invalid position");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = -1 * X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS));
-				param.motor_move.motor_id = MOTOR_1;
-				motor_server_post(MOTOR_JOG, &param);
-			}
-
-			current_position = pmc_get_motor_position(MOTOR_2);
-
-			if ((current_position - Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS))) < 0) {
-				LOG_W("Y axis invalid position");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = -1 * Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS));
-				param.motor_move.motor_id = MOTOR_2;
-				motor_server_post(MOTOR_JOG, &param);
-			}
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = -1 * Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS));
+			param.motor_move.motor_id = MOTOR_2;
+			motor_server_post(MOTOR_JOG, &param);
 
 			break;
 		default:
@@ -393,29 +366,16 @@ void md_hold_reg_write_handle(struct md_event *event)
 	case HOLD_REG_Z_AXIS ... HOLD_REG_Z_CMD:
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
 		case ROBOT_FWD:
-			current_position = pmc_get_motor_position(MOTOR_3);
-
-			if ((current_position + Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)))
-					> Z_AXIS_PULSE(Z_AXIS_LENGTH)) {
-				LOG_W("Z axis over length");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS));
-				param.motor_move.motor_id = MOTOR_3;
-				motor_server_post(MOTOR_JOG, &param);
-			}
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS));
+			param.motor_move.motor_id = MOTOR_3;
+			motor_server_post(MOTOR_JOG, &param);
 			break;
 		case ROBOT_RCV:
-			current_position = pmc_get_motor_position(MOTOR_3);
-
-			if ((current_position - Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS))) < 0) {
-				LOG_W("Z axis invalid position");
-			} else {
-				param.motor_move.station_addr = ROBOT_ADDR;
-				param.motor_move.pos = -1 * Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS));
-				param.motor_move.motor_id = MOTOR_3;
-				motor_server_post(MOTOR_JOG, &param);
-			}
+			param.motor_move.station_addr = ROBOT_ADDR;
+			param.motor_move.pos = -1 * Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS));
+			param.motor_move.motor_id = MOTOR_3;
+			motor_server_post(MOTOR_JOG, &param);
 			break;
 		case ROBOT_STOP:
 			param.motor_move.station_addr = ROBOT_ADDR;
@@ -457,13 +417,13 @@ void md_hold_reg_write_handle(struct md_event *event)
 			break;
 		case ROBOT_FWD:
 			param.motor_move.station_addr = ROBOT_ADDR;
-			param.motor_move.pos = SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING));
+			param.motor_move.pos = REG_VALUE(HOLD_REG_SYRING);
 			param.motor_move.motor_id = MOTOR_4;
 			motor_server_post(MOTOR_JOG, &param);
 			break;
 		case ROBOT_RCV:
 			param.motor_move.station_addr = ROBOT_ADDR;
-			param.motor_move.pos = -1 * SYRING_PULSE(REG_VALUE(HOLD_REG_SYRING));
+			param.motor_move.pos = -1 * REG_VALUE(HOLD_REG_SYRING);
 			param.motor_move.motor_id = MOTOR_4;
 			motor_server_post(MOTOR_JOG, &param);
 			break;
