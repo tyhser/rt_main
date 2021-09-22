@@ -369,13 +369,13 @@ void md_hold_reg_write_handle(struct md_event *event)
 		switch (REG_VALUE(HOLD_REG_Z_CMD)) {
 		case ROBOT_FWD:
 			param.motor_move.station_addr = ROBOT_ADDR;
-			param.motor_move.pos = Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS));
+			param.motor_move.pos = REG_VALUE(HOLD_REG_Z_AXIS);
 			param.motor_move.motor_id = MOTOR_3;
 			motor_server_post(MOTOR_JOG, &param);
 			break;
 		case ROBOT_RCV:
 			param.motor_move.station_addr = ROBOT_ADDR;
-			param.motor_move.pos = -1 * Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS));
+			param.motor_move.pos = -1 * REG_VALUE(HOLD_REG_Z_AXIS);
 			param.motor_move.motor_id = MOTOR_3;
 			motor_server_post(MOTOR_JOG, &param);
 			break;
@@ -399,7 +399,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 			if (REG_VALUE(HOLD_REG_Z_AXIS) > Z_AXIS_LENGTH)
 				LOG_W("Z axis move over length");
 			else
-				motor_server_z_abs(Z_AXIS_PULSE(REG_VALUE(HOLD_REG_Z_AXIS)));
+				motor_server_z_abs(REG_VALUE(HOLD_REG_Z_AXIS));
 			break;
 		default:
 			LOG_E("Unkow cmd");
