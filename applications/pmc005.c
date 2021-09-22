@@ -568,7 +568,7 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM3", strlen("aM3"));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'A';
-	sprintf((char *)num_str, "%ld", pos);
+	sprintf((char *)num_str, "%ld", motor_route_in_pulse(MOTOR_3, pos));
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
