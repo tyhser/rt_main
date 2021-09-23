@@ -330,6 +330,7 @@ void pmc_robot_home(uint8_t station_addr)
 
 void pmc_robot_init(uint8_t station_addr)
 {
+	int32_t pos = 0;
 #if MBP
 	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM2j2m120V20000D25000z0aM4m100L1000V64000Z50000R\r";
 #else
@@ -345,6 +346,14 @@ void pmc_robot_init(uint8_t station_addr)
 			break;
 		rt_thread_mdelay(300);
 	}
+	pos = pmc_get_motor_position(MOTOR_1);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR1_POSITION_INDEX, pos);
+	pos = pmc_get_motor_position(MOTOR_2);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR2_POSITION_INDEX, pos);
+	pos = pmc_get_motor_position(MOTOR_3);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR3_POSITION_INDEX, pos);
+	pos = pmc_get_motor_position(MOTOR_4);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR4_POSITION_INDEX, pos);
 }
 
 int pmc_is_motor_busy(uint8_t station_addr, enum motor_id id)
