@@ -438,6 +438,65 @@ uint32_t pmc_get_current_motor_max_speed(void)
 	return speed;
 }
 
+static int get_limit_data(char *s, int buf_out[2])
+{
+	char *delim = ",";
+
+	buf_out[0] = atoi(strtok(s, delim));
+	buf_out[1] = atoi(strtok(NULL, delim));
+	return 0;
+}
+
+enum axis_tristate_pos pmc_get_motor_tristate_pos(uint32_t addr, enum motor_id id)
+{
+	uint8_t cmd[] = "/1?aa1\r";
+	uint8_t recv[128] = {0};
+	struct response_info info = {0};
+	int limit_buf[2] = {0};
+
+	cmd[1] = get_hex_ch(addr);
+	cmd[5] = id + '1';
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	pmc_get_response_info(&info, recv, 128);
+	get_limit_data((char *)info.data, limit_buf);
+
+	if (!limit_buf[0] && !limit_buf[1])
+		return MIDDLE_POS;
+	if (limit_buf[0] != 0 && !limit_buf[1])
+		return LOW_POS;
+	if (!limit_buf[0] && limit_buf[1] != 0)
+		return HIGH_POS;
+	return UNKNOW_POS;
+}
+
+void pmc_motor_tristate(int argc, char *argv[])
+{
+	int tristate_pos = 0;
+
+	if ((argc < 2) || (argv[1][0] < '1') || (argv[1][0] > '4')) {
+		rt_kprintf("usage: pmc_motor_tristate [1/2/3/4]\n");
+		return;
+	}
+
+	tristate_pos = pmc_get_motor_tristate_pos(1, argv[1][0] - '1');
+	switch (tristate_pos)
+	{
+	case LOW_POS:
+		rt_kprintf("LOW\n");
+	break;
+	case MIDDLE_POS:
+		rt_kprintf("MIDDLE\n");
+	break;
+	case HIGH_POS:
+		rt_kprintf("HIGH\n");
+	break;
+	default:
+		rt_kprintf("UNKNOW\n");
+	break;
+	}
+}
+MSH_CMD_EXPORT(pmc_motor_tristate, pmc get tristate);
+
 void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 {
 	if (id > 4) {
@@ -496,10 +555,8 @@ void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 	int32_t x_pos = 0;
 	int32_t y_pos = 0;
 
-	pmc_select_motor(MOTOR_1, ROBOT_ADDR);
-	x_pos = pmc_get_current_motor_position();
-	pmc_select_motor(MOTOR_2, ROBOT_ADDR);
-	y_pos = pmc_get_current_motor_position();
+	x_pos = pmc_get_motor_position(MOTOR_1);
+	y_pos = pmc_get_motor_position(MOTOR_2);
 
 	if ((x != x_pos) || (y != y_pos)) {
 		pmc_motor_z_abs(ROBOT_ADDR, 0);
@@ -515,9 +572,8 @@ void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 	}
 
 	pmc_select_motor(MOTOR_1, ROBOT_ADDR);
-	current_position = pmc_get_current_motor_position();
 	prev_speed = pmc_get_current_motor_max_speed();
-	x_axis_speed = get_x_axis_max_speed_by_length(abs(X_AXIS_PULSE_TO_LEN(current_position)-x));
+	x_axis_speed = get_x_axis_max_speed_by_length(abs(X_AXIS_PULSE_TO_LEN(x_pos)-x));
 	LOG_I("x axis speed:%ld", x_axis_speed);
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
