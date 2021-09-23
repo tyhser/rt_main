@@ -50,6 +50,13 @@ enum pmc_valve {
 	PMC_VALVE_ALL_ON
 };
 
+enum axis_tristate_pos {
+	LOW_POS,
+	MIDDLE_POS,
+	HIGH_POS,
+	UNKNOW_POS
+};
+
 struct response_info {
 	uint8_t host_addr;
 	uint8_t status;
@@ -76,6 +83,8 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed);
 void pmc_set_valve(uint8_t station_addr, enum pmc_valve value);
 
 void deliver_set_valve(uint8_t station_addr, uint8_t valve);
+
+enum axis_tristate_pos pmc_get_motor_tristate_pos(uint32_t addr, enum motor_id id);
 #ifdef __cplusplus
 }
 #endif
