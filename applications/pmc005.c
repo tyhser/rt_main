@@ -43,9 +43,20 @@ extern ebled_t led0;
 
 #define REG_PMC_STATE			(usSRegInBuf[3])
 
+#define REG_MOTOR1_POSITION_INDEX	22
+#define REG_MOTOR2_POSITION_INDEX	24
+#define REG_MOTOR3_POSITION_INDEX	26
+#define REG_MOTOR4_POSITION_INDEX	28
+
 #define REG_SLAVE_AXIS_ONLINE		(usSRegInBuf[4])
 #define BREAK_OPEN			set_valve(31, 1)
 #define BREAK_CLOSE			set_valve(31, 0)
+
+#define MODBUS_SET_INT32_TO_INT16(index, value) \
+    do { \
+        usSRegInBuf[(index)    ] = (value) >> 16; \
+        usSRegInBuf[(index) + 1] = (value); \
+    } while (0)
 
 enum motor_status {
 	MOTOR_OK,
@@ -306,6 +317,7 @@ void pmc_stop(uint8_t station_addr)
 
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	REG_PMC_STATE = get_pmc_status(recv, strlen((char *)recv));
+
 }
 
 void pmc_robot_home(uint8_t station_addr)
@@ -508,6 +520,7 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 	uint8_t recv[128] = {0};
 	uint32_t prev_speed = 0;
 	int ret = 0;
+	int32_t pos = 0;
 
 	pmc_select_motor(id, station_addr);
 	prev_speed = pmc_get_current_motor_max_speed();
@@ -526,6 +539,8 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 		BREAK_CLOSE;
 	}
 	pmc_set_current_motor_speed(station_addr, prev_speed);
+	pos = pmc_get_motor_position(id);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR1_POSITION_INDEX + 2 * id, pos);
 }
 
 uint32_t get_x_axis_max_speed_by_length(int32_t x)
@@ -543,13 +558,11 @@ uint32_t get_x_axis_max_speed_by_length(int32_t x)
 
 void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 {
-
 	uint8_t num_str[25] = {0};
 	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
 	struct response_info info = {0};
-	int32_t current_position = 0;
 	uint32_t prev_speed = 0;
 	uint32_t x_axis_speed = 0;
 	int32_t x_pos = 0;
@@ -610,6 +623,11 @@ void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 			break;
 		rt_thread_mdelay(300);
 	}
+	x_pos = pmc_get_motor_position(MOTOR_1);
+	y_pos = pmc_get_motor_position(MOTOR_2);
+
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR1_POSITION_INDEX, x_pos);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR2_POSITION_INDEX, y_pos);
 }
 
 void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
@@ -619,6 +637,7 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
 	struct response_info info = {0};
+	int32_t cpos = 0;
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
@@ -638,6 +657,9 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 		rt_thread_mdelay(300);
 	}
 	BREAK_CLOSE;
+
+	cpos = pmc_get_motor_position(MOTOR_3);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR3_POSITION_INDEX, cpos);
 }
 
 void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
@@ -647,6 +669,7 @@ void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
 	struct response_info info = {0};
+	int32_t cpos = 0;
 
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
@@ -665,6 +688,8 @@ void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
 			break;
 		rt_thread_mdelay(300);
 	}
+	cpos = pmc_get_motor_position(MOTOR_4);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR4_POSITION_INDEX, cpos);
 }
 
 void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
@@ -675,6 +700,7 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 	uint8_t *cmd_pos = &cmd[0];
 	struct response_info info = {0};
 	uint32_t prev_speed = 0;
+	int32_t pos = 0;
 
 	pmc_select_motor(MOTOR_4, station_addr);
 	prev_speed = pmc_get_current_motor_max_speed();
@@ -704,7 +730,8 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 		rt_thread_mdelay(300);
 	}
 	pmc_set_current_motor_speed(station_addr, prev_speed);
-
+	pos = pmc_get_motor_position(MOTOR_4);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR4_POSITION_INDEX, pos);
 #undef PP_CMD
 }
 
@@ -743,6 +770,8 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	if (motor_id == MOTOR_3) {
 		BREAK_CLOSE;
 	}
+	current_position = pmc_get_motor_position(motor_id);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR1_POSITION_INDEX + 2 * motor_id, current_position);
 	return 0;
 }
 
@@ -781,6 +810,8 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	if (motor_id == MOTOR_3) {
 		BREAK_CLOSE;
 	}
+	current_position = pmc_get_motor_position(motor_id);
+	MODBUS_SET_INT32_TO_INT16(REG_MOTOR1_POSITION_INDEX + 2 * motor_id, current_position);
 	return 0;
 }
 
