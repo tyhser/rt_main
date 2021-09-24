@@ -68,6 +68,10 @@ int main(void)
 	pmc_init();
 	rt_kprintf("application version: "GIT_DESC"\n");
 	pc_on_off();
-
+	while (1) {
+		if(!__EASYBLINK_IS_FLAG(led0, PKG_EASYBLINK_ACTIVE))
+			easyblink(led0, -1, 500, 1000);
+		rt_thread_mdelay(1000);
+	}
 	return RT_EOK;
 }
