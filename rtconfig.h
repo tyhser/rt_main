@@ -89,6 +89,8 @@
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_PIN
 #define RT_USING_ADC
+#define RT_USING_RTC
+#define RT_USING_SOFT_RTC
 
 /* Using USB */
 
@@ -130,8 +132,8 @@
 #define ULOG_OUTPUT_FLOAT
 #define ULOG_USING_COLOR
 #define ULOG_OUTPUT_TIME
+#define ULOG_TIME_USING_TIMESTAMP
 #define ULOG_OUTPUT_LEVEL
-#define ULOG_OUTPUT_TAG
 #define ULOG_BACKEND_USING_CONSOLE
 
 /* RT-Thread online packages */
