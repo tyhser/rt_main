@@ -13,6 +13,9 @@ menu "Replaceable physical module"
     config APP_USING_PISTON_PUMP
 	bool "syring using piston pump"
 	default n
+    config APP_USING_PMC_SAMPLER
+	bool "syring using pmc005 control sampler"
+	default n
 
 endmenu
 

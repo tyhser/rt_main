@@ -245,5 +245,6 @@
 
 /* Replaceable physical module */
 
+#define APP_USING_PMC_SAMPLER
 
 #endif
