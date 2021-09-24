@@ -83,7 +83,7 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed);
 void pmc_set_valve(uint8_t station_addr, enum pmc_valve value);
 
 void deliver_set_valve(uint8_t station_addr, uint8_t valve);
-
+void pmc_motor_speed_mode_stop(uint8_t addr, uint8_t id);
 enum axis_tristate_pos pmc_get_motor_tristate_pos(uint32_t addr, enum motor_id id);
 #ifdef __cplusplus
 }

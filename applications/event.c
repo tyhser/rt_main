@@ -465,6 +465,9 @@ void md_hold_reg_write_handle(struct md_event *event)
 
 		for (int i = 0; i < cnt; i++) {
 			pmc_pumb = get_pmc_pumb_struct(addr + i);
+
+			if (pmc_pumb->pmc_addr > 2)
+				pmc_motor_speed_mode_stop(pmc_pumb->pmc_addr, pmc_pumb->pmc_motor_id);
 			pmc_motor_speed_mode(pmc_pumb->pmc_addr, pmc_pumb->pmc_motor_id, REG_VALUE(addr + i));
 		}
 	}
