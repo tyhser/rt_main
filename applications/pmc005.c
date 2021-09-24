@@ -835,6 +835,16 @@ int pmc_motor_jog(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	return 0;
 }
 
+void pmc_motor_speed_mode_stop(uint8_t addr, uint8_t id)
+{
+	uint8_t cmd[] = "/1T1R\r";
+	uint8_t recv[128] = {0};
+
+	cmd[1] = get_hex_ch(addr);
+	cmd[3] = id + '1';
+	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+}
+
 int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 {
 	LOG_I("enter pmc_motor_speed_mode:(%d %d %d)", station_addr, motor_id, speed);
