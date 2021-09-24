@@ -859,7 +859,11 @@ int pmc_motor_speed_mode(uint8_t station_addr, uint8_t motor_id, int16_t speed)
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
 	*(cmd_pos + strlen((char *)cmd_pos)) = motor_id + '0';
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'V';
+#ifdef APP_USING_PMC_SAMPLER
+	sprintf((char *)num_str, "%u", (uint16_t)abs(speed * 160 / 3));
+#else
 	sprintf((char *)num_str, "%u", (uint16_t)abs(speed));
+#endif
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 
 	if (speed > 0)
