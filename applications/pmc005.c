@@ -226,7 +226,7 @@ int pmc_get_response_info(struct response_info *info, const uint8_t *recv, int l
         uint8_t pos = 0;
 
         if (len < 4) {
-                printf("response pkg bad");
+                LOG_E("response pkg bad");
                 return -1;
         }
         if ((recv[0] == 0xff) && (recv[1] == '/')) {
@@ -234,7 +234,7 @@ int pmc_get_response_info(struct response_info *info, const uint8_t *recv, int l
         } else if (recv[0] == '/') {
                 pos = 0;
         } else {
-                printf("response pkg bad");
+                LOG_E("response pkg bad");
                 return -1;
         }
 

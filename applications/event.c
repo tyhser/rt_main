@@ -30,7 +30,16 @@
 #define HOLD_REG_SYRING		185
 #define HOLD_REG_SYRING_CMD	186
 
-#define HOLD_REG_SAMPLER_ADDR	188
+#define HOLD_REG_TIMEINSECONDS	187
+
+#define HOLD_REG_TIME_CALIBRATE_CMD 189
+
+#define kSecondsPerMinute 60
+#define kSecondsPerHour (60 * 60)    // 3600
+#define kSecondsPerDay (60 * 60 * 24)   // 86400
+#define kSecondsPerWeek (60 * 60 * 24 * 7)   // 604800
+#define kSecondsPerMonth (60 * 60 * 24 * 30) // 2592000
+#define kSecondsPerYear (60 * 60 * 24 * 365) // 31536000
 
 struct pmc_pumb {
 	uint32_t modbus_addr;
@@ -83,12 +92,23 @@ enum robot_status {
 
 extern void set_valve(int id, int val);
 extern void temperature_control_enable_disable(int val);
+void SecondsToYMD_HMS(
+ int64_t inSeconds,
+ int *outYear,
+ int *outMonth,
+ int *outDay,
+ int *outHour,
+ int *outMinute,
+ int *outSecond);
+
 static struct rt_thread *event_thread;
 
 extern ebled_t red;
 extern ebled_t green;
 extern ebled_t yellow;
 extern ebled_t beep;
+
+extern uint16_t usSRegHoldBuf[S_REG_HOLDING_NREGS];
 
 struct pmc_pumb *get_pmc_pumb_struct(uint32_t md_addr)
 {
@@ -458,6 +478,37 @@ void md_hold_reg_write_handle(struct md_event *event)
 		REG(HOLD_REG_SYRING_CMD) = ROBOT_READY;
 		REG(HOLD_REG_SYRING) = 0;
 		break;
+	case 187 ... 189:
+	{
+		if (REG_VALUE(HOLD_REG_TIME_CALIBRATE_CMD)) {
+
+#define MODBUS_GET_INT32_FROM_INT16(tab_int16, index) ((tab_int16[(index)] << 16) + tab_int16[(index) + 1])
+		int64_t inSeconds =
+			MODBUS_GET_INT32_FROM_INT16(event->reg, (HOLD_REG_TIMEINSECONDS - S_REG_HOLDING_START)) + kSecondsPerHour * 8 + kSecondsPerDay;
+		int outYear = 0;
+		int outMonth = 0;
+		int outDay = 0;
+		int outHour = 0;
+		int outMinute = 0;
+		int outSecond = 0;
+
+		SecondsToYMD_HMS(
+		inSeconds,
+		&outYear,
+		&outMonth,
+		&outDay,
+		&outHour,
+		&outMinute,
+		&outSecond);
+
+		LOG_I("set time to %d-%02d-%02d %02d:%02d:%02d\n", 1969 + outYear, outMonth, outDay, outHour, outMinute, outSecond);
+
+    		set_date(outYear+1969, outMonth, outDay);
+		set_time(outHour, outMinute, outSecond);
+		}
+		REG(HOLD_REG_TIME_CALIBRATE_CMD) = 0;
+	}
+	break;
 		/*pmc pumb speed control*/
 	case 190 ... 214:
 	{
@@ -522,4 +573,59 @@ rt_err_t event_init(void)
 			15, 5);
 	rt_thread_startup(event_thread);
 	return ret;
+}
+
+#define IsLeapYear(YEAR) (!((YEAR) % 4) && (((YEAR) % 100) || !((YEAR) % 400)))
+#define YearToDays(YEAR) (((YEAR)*365) + ((YEAR) / 4) - ((YEAR) / 100) + ((YEAR) / 400))
+#define MonthToDays(MONTH) ((((MONTH)*3057) - 3007) / 100)
+
+
+
+void SecondsToYMD_HMS(
+ int64_t inSeconds,
+ int *outYear,
+ int *outMonth,
+ int *outDay,
+ int *outHour,
+ int *outMinute,
+ int *outSecond)
+{
+ int days, seconds, x;
+ int year, month, day, hour, minute, second;
+
+ days = (int)(inSeconds / kSecondsPerDay);
+ seconds = (int)(inSeconds % kSecondsPerDay);
+ for (x = (days * 400) / 146097; YearToDays(x) < days; ++x)
+ {
+ }
+ year = x;
+
+ x = days - YearToDays(x - 1);
+ if (x > 59)
+ {
+  x += 2;
+  if (IsLeapYear(year))
+  {
+   x -= (x > 64) ? 1 : 2;
+  }
+ }
+ month = ((x * 100) + 3007) / 3057;
+ day = x - MonthToDays(month);
+ hour = seconds / kSecondsPerHour;
+ seconds = seconds % kSecondsPerHour;
+ minute = seconds / kSecondsPerMinute;
+ second = seconds % kSecondsPerMinute;
+
+ if (outYear)
+  *outYear = year;
+ if (outMonth)
+  *outMonth = month;
+ if (outDay)
+  *outDay = day;
+ if (outHour)
+  *outHour = hour;
+ if (outMinute)
+  *outMinute = minute;
+ if (outSecond)
+  *outSecond = second;
 }
