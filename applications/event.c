@@ -31,7 +31,6 @@
 #define HOLD_REG_SYRING_CMD	186
 
 #define HOLD_REG_TIMEINSECONDS	187
-
 #define HOLD_REG_TIME_CALIBRATE_CMD 189
 
 #define kSecondsPerMinute 60
@@ -93,13 +92,13 @@ enum robot_status {
 extern void set_valve(int id, int val);
 extern void temperature_control_enable_disable(int val);
 void SecondsToYMD_HMS(
- int64_t inSeconds,
- int *outYear,
- int *outMonth,
- int *outDay,
- int *outHour,
- int *outMinute,
- int *outSecond);
+	int64_t inSeconds,
+	int *outYear,
+	int *outMonth,
+	int *outDay,
+	int *outHour,
+	int *outMinute,
+	int *outSecond);
 
 static struct rt_thread *event_thread;
 
@@ -579,53 +578,48 @@ rt_err_t event_init(void)
 #define YearToDays(YEAR) (((YEAR)*365) + ((YEAR) / 4) - ((YEAR) / 100) + ((YEAR) / 400))
 #define MonthToDays(MONTH) ((((MONTH)*3057) - 3007) / 100)
 
-
-
 void SecondsToYMD_HMS(
- int64_t inSeconds,
- int *outYear,
- int *outMonth,
- int *outDay,
- int *outHour,
- int *outMinute,
- int *outSecond)
+	int64_t inSeconds,
+	int *outYear,
+	int *outMonth,
+	int *outDay,
+	int *outHour,
+	int *outMinute,
+	int *outSecond)
 {
- int days, seconds, x;
- int year, month, day, hour, minute, second;
+	int days, seconds, x;
+	int year, month, day, hour, minute, second;
 
- days = (int)(inSeconds / kSecondsPerDay);
- seconds = (int)(inSeconds % kSecondsPerDay);
- for (x = (days * 400) / 146097; YearToDays(x) < days; ++x)
- {
- }
- year = x;
+	days = (int)(inSeconds / kSecondsPerDay);
+	seconds = (int)(inSeconds % kSecondsPerDay);
+	for (x = (days * 400) / 146097; YearToDays(x) < days; ++x) {
+	}
+	year = x;
 
- x = days - YearToDays(x - 1);
- if (x > 59)
- {
-  x += 2;
-  if (IsLeapYear(year))
-  {
-   x -= (x > 64) ? 1 : 2;
-  }
- }
- month = ((x * 100) + 3007) / 3057;
- day = x - MonthToDays(month);
- hour = seconds / kSecondsPerHour;
- seconds = seconds % kSecondsPerHour;
- minute = seconds / kSecondsPerMinute;
- second = seconds % kSecondsPerMinute;
+	x = days - YearToDays(x - 1);
+	if (x > 59) {
+		x += 2;
+		if (IsLeapYear(year)) {
+			x -= (x > 64) ? 1 : 2;
+		}
+	}
+	month = ((x * 100) + 3007) / 3057;
+	day = x - MonthToDays(month);
+	hour = seconds / kSecondsPerHour;
+	seconds = seconds % kSecondsPerHour;
+	minute = seconds / kSecondsPerMinute;
+	second = seconds % kSecondsPerMinute;
 
- if (outYear)
-  *outYear = year;
- if (outMonth)
-  *outMonth = month;
- if (outDay)
-  *outDay = day;
- if (outHour)
-  *outHour = hour;
- if (outMinute)
-  *outMinute = minute;
- if (outSecond)
-  *outSecond = second;
+	if (outYear)
+		*outYear = year;
+	if (outMonth)
+		*outMonth = month;
+	if (outDay)
+		*outDay = day;
+	if (outHour)
+		*outHour = hour;
+	if (outMinute)
+		*outMinute = minute;
+	if (outSecond)
+		*outSecond = second;
 }
