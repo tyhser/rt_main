@@ -30,7 +30,7 @@
 #define HOLD_REG_SYRING		185
 #define HOLD_REG_SYRING_CMD	186
 
-#define HOLD_REG_TIMEINSECONDS	188
+#define HOLD_REG_TIMEINSECONDS	187
 
 #define HOLD_REG_TIME_CALIBRATE_CMD 189
 
@@ -478,14 +478,13 @@ void md_hold_reg_write_handle(struct md_event *event)
 		REG(HOLD_REG_SYRING_CMD) = ROBOT_READY;
 		REG(HOLD_REG_SYRING) = 0;
 		break;
-	case 189:
+	case 187 ... 189:
 	{
 		if (REG_VALUE(HOLD_REG_TIME_CALIBRATE_CMD)) {
 
-#define MODBUS_GET_INT32_FROM_INT16(tab_int16, index) ((usSRegHoldBuf[(index)] << 16) + usSRegHoldBuf)
+#define MODBUS_GET_INT32_FROM_INT16(tab_int16, index) ((tab_int16[(index)] << 16) + tab_int16[(index) + 1])
 		int64_t inSeconds =
-			REG(HOLD_REG_TIMEINSECONDS - S_REG_HOLDING_START) +
-			kSecondsPerHour * 8 + kSecondsPerDay;
+			MODBUS_GET_INT32_FROM_INT16(event->reg, (HOLD_REG_TIMEINSECONDS - S_REG_HOLDING_START)) + kSecondsPerHour * 8 + kSecondsPerDay;
 		int outYear = 0;
 		int outMonth = 0;
 		int outDay = 0;
@@ -502,7 +501,7 @@ void md_hold_reg_write_handle(struct md_event *event)
 		&outMinute,
 		&outSecond);
 
-		LOG_I("set time to %d-%02d-%02d %02d:%02d:%02d\n", outYear, outMonth, outDay, outHour, outMinute, outSecond);
+		LOG_I("set time to %d-%02d-%02d %02d:%02d:%02d\n", 1969 + outYear, outMonth, outDay, outHour, outMinute, outSecond);
 
     		set_date(outYear+1969, outMonth, outDay);
 		set_time(outHour, outMinute, outSecond);
