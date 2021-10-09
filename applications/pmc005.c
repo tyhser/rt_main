@@ -222,27 +222,33 @@ int pmc_motor_absolute_position(uint8_t station_addr, uint8_t motor_id, int32_t 
 
 int pmc_get_response_info(struct response_info *info, const uint8_t *recv, int len)
 {
-        int ret = 0;
-        uint8_t pos = 0;
+	int ret = 0;
+	uint8_t pos = 0;
 
-        if (len < 4) {
-                LOG_E("response pkg bad");
-                return -1;
+	if (len < 4) {
+		LOG_E("response pkg bad");
+		return -1;
         }
         if ((recv[0] == 0xff) && (recv[1] == '/')) {
-                pos = 1;
+		pos = 1;
         } else if (recv[0] == '/') {
-                pos = 0;
+		pos = 0;
         } else {
-                LOG_E("response pkg bad");
-                return -1;
+		LOG_E("response pkg bad");
+		return -1;
         }
 
-        info->host_addr = recv[++pos];
-        info->status = recv[++pos];
-        for (int i = 0; recv[++pos] != 0x03; i++) {
-                info->data[i] = recv[pos];
-        }
+	info->host_addr = recv[++pos];
+	info->status = recv[++pos];
+	pos++;
+	for (int i = 0; recv[pos] != 0x03; i++) {
+		info->data[i] = recv[pos];
+		pos++;
+		if (pos >= len) {
+			LOG_E("response pkg bad");
+			return -1;
+		}
+	}
 	return ret;
 }
 
