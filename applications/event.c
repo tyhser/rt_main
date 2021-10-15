@@ -121,8 +121,8 @@ struct pmc_pumb *get_pmc_pumb_struct(uint32_t md_addr)
 void red_alarm_handler(int bit)
 {
 	if (bit) {
-		easyblink(red, 16, 100, 150);
-		easyblink(beep, 16, 100, 150);
+		easyblink(red, 16, 500, 1000);
+		easyblink(beep, 16, 500, 1000);
 	} else {
 		easyblink_stop(red);
 		easyblink_stop(beep);
@@ -132,8 +132,8 @@ void red_alarm_handler(int bit)
 void yellow_alarm_handler(int bit)
 {
 	if (bit) {
-		easyblink(yellow, 16, 250, 300);
-		easyblink(beep, 16, 250, 300);
+		easyblink(yellow, 16, 1500, 3000);
+		easyblink(beep, 16, 1500, 3000);
 	} else {
 		easyblink_stop(yellow);
 		easyblink_stop(beep);
@@ -143,8 +143,8 @@ void yellow_alarm_handler(int bit)
 void green_alarm_handler(int bit)
 {
 	if (bit) {
-		easyblink(green, 16, 500, 1000);
-		easyblink(beep, 16, 500, 1000);
+		easyblink(green, 16, 1500, 3000);
+		easyblink(beep, 16, 1500, 3000);
 	} else {
 		easyblink_stop(green);
 		easyblink_stop(beep);
