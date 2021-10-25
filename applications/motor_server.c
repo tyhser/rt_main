@@ -113,7 +113,7 @@ int motor_ser_init(void)
 	m_ser_thread = rt_thread_create("m_ser",
 			motor_server_thread_entry,
 			RT_NULL,
-			2048,
+			3072,
 			11, 5);
 	rt_thread_startup(m_ser_thread);
 	return 0;
