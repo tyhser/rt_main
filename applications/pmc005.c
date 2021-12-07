@@ -654,6 +654,8 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 	struct response_info info = {0};
 	int32_t cpos = 0;
 
+	cpos = pmc_get_motor_position(MOTOR_3);
+
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM3", strlen("aM3"));
@@ -662,7 +664,10 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
 	*(cmd_pos + strlen((char *)cmd_pos)) = '\r';
-	BREAK_OPEN;
+
+	if (cpos != 0 || pos != 0)
+		BREAK_OPEN;
+
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
 
@@ -758,11 +763,30 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	uint8_t cmd[128] = {0};
 	uint8_t recv[128] = {0};
 	uint8_t *cmd_pos = &cmd[0];
+	uint32_t limit_length = 0;
+
+	switch (motor_id)
+	{
+	case MOTOR_1:
+		limit_length = X_AXIS_LENGTH;
+	break;
+	case MOTOR_2:
+		limit_length = Y_AXIS_LENGTH;
+	break;
+	case MOTOR_3:
+		limit_length = Z_AXIS_LENGTH;
+	break;
+	case MOTOR_4:
+		limit_length = SYRING_LENGTH;
+	break;
+	default:
+	break;
+	}
 
 	int32_t current_position = pmc_get_motor_position(motor_id);
 
-	if (motor_route_in_pulse(motor_id, pos) + current_position > motor_route_in_pulse(motor_id, SYRING_LENGTH)) {
-		LOG_W("fwd ERROR syring move to:%d", motor_route_in_pulse(motor_id, pos) + current_position);
+	if (motor_route_in_pulse(motor_id, pos) + current_position > motor_route_in_pulse(motor_id, limit_length)) {
+		LOG_W("motor:%d fwd ERROR move to:%d", motor_id + 1, motor_route_in_pulse(motor_id, pos) + current_position);
 		return 0;
 	}
 
