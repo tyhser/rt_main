@@ -19,7 +19,7 @@
 #define Y_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Y_SUB_PULSE * 200 / (Y_LEAD_MM * 10))
 #define Z_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
 #define SYRING_PULSE(ul) (int32_t)((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
-#define X_AXIS_LENGTH		3350
+#define X_AXIS_LENGTH		3900
 #define Y_AXIS_LENGTH		1835
 #define Z_AXIS_LENGTH		1055
 #define SYRING_LENGTH		10500
