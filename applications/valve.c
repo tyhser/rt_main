@@ -125,4 +125,3 @@ int sw_input_init(void)
 	}
 	return 0;
 }
-INIT_APP_EXPORT(sw_input_init);
