@@ -35,6 +35,7 @@
 
 extern rt_err_t event_init(void);
 extern void valve_init(void);
+extern int sw_input_init(void);
 
 void pc_on_off(void)
 {
@@ -68,6 +69,7 @@ int main(void)
 	pmc_init();
 	rt_kprintf("application version: "GIT_DESC"\n");
 	pc_on_off();
+	sw_input_init();
 	while (1) {
 		if(!__EASYBLINK_IS_FLAG(led0, PKG_EASYBLINK_ACTIVE))
 			easyblink(led0, -1, 500, 1000);
