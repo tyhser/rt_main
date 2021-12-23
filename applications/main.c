@@ -16,6 +16,7 @@
 #include "modbus_event.h"
 #include "easyblink.h"
 #include "digital_ctrl.h"
+#include "dac121s101.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "main"
@@ -70,6 +71,9 @@ int main(void)
 	rt_kprintf("application version: "GIT_DESC"\n");
 	pc_on_off();
 	sw_input_init();
+	DAC121S101_Init();
+
+	DAC121S101_WriteDAC(1, PD_OPERATION_NORMAL, 700);
 	while (1) {
 		if(!__EASYBLINK_IS_FLAG(led0, PKG_EASYBLINK_ACTIVE))
 			easyblink(led0, -1, 500, 1000);

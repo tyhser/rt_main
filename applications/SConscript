@@ -14,6 +14,7 @@ valve.c
 electrode.c
 temperature_controller.c
 motor_server.c
+dac121s101.c
 """)
 
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)
