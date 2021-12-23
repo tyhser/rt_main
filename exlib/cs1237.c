@@ -18,8 +18,8 @@
 #define DELAY_MS(t) cs1237_delay_us(1000*t)
 #define DELAY_US(t) cs1237_delay_us(t)
 
-#define SCLK1_PIN       GET_PIN(D,  0)
-#define DRDYDOUT1_PIN   GET_PIN(D,  1)
+#define SCLK1_PIN       GET_PIN(D,  2)
+#define DRDYDOUT1_PIN   GET_PIN(D,  3)
 
 #define SCLK2_PIN       GET_PIN(C, 10)
 #define DRDYDOUT2_PIN   GET_PIN(C, 11)
@@ -34,7 +34,6 @@ struct ic_pin {
 	rt_base_t drdydout_pin;
 } boad_pin[2] = {
 	{ SCLK1_PIN, DRDYDOUT1_PIN },
-	{ SCLK2_PIN, DRDYDOUT2_PIN },
 };
 
 #define SCLK_P(ch) boad_pin[(ch)].sclk_pin
@@ -332,11 +331,10 @@ int cs1237_init(void)
 		cs1237_write_config(i, CS_CONFIG);
 
 	for (int i = channel1; i < channel_cnt; i++) {
-		while (cs1237_read_config(i) != CS_CONFIG) {
+		if (cs1237_read_config(i) != CS_CONFIG) {
 			rt_kprintf("\n\tCS1237%d read error...\n", i);
 			cs1237_write_config(i, CS_CONFIG);
 			DELAY_MS(10);
-			continue;
 		}
 	}
 	return 0;

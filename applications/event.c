@@ -7,6 +7,7 @@
 #include "pmc005.h"
 #include "easyblink.h"
 #include "motor_server.h"
+#include "dac121s101.h"
 
 #ifndef ULOG_USING_SYSLOG
 #define LOG_TAG              "event"
@@ -32,6 +33,9 @@
 
 #define HOLD_REG_TIMEINSECONDS	187
 #define HOLD_REG_TIME_CALIBRATE_CMD 189
+
+#define HOLD_REG_DAC1	217
+#define HOLD_REG_DAC2	218
 
 #define kSecondsPerMinute 60
 #define kSecondsPerHour (60 * 60)    // 3600
@@ -523,6 +527,16 @@ void md_hold_reg_write_handle(struct md_event *event)
 		}
 	}
 		break;
+	case HOLD_REG_DAC1:
+	{
+		DAC121S101_WriteDAC(0, PD_OPERATION_NORMAL, REG_VALUE(HOLD_REG_DAC1));
+	}
+	break;
+	case HOLD_REG_DAC2:
+	{
+		DAC121S101_WriteDAC(1, PD_OPERATION_NORMAL, REG_VALUE(HOLD_REG_DAC2));
+	}
+	break;
 	default:
 		LOG_E("UNKNOW HOLD REG");
 		break;
