@@ -982,3 +982,9 @@ int pmc_init(void)
 	BREAK_CLOSE;
 	return 0;
 }
+
+void set_baudrate_for_pmc(int argc, char *argv[])
+{
+	rs485_config(hinst, atol((char *)argv[1]), 8, PMC_PARITY, 1);
+}
+MSH_CMD_EXPORT(set_baudrate_for_pmc, set pmc baudrate);
