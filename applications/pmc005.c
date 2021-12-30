@@ -827,7 +827,8 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	int32_t current_position = pmc_get_motor_position(motor_id);
 
 	if (current_position < motor_route_in_pulse(motor_id, pos)) {
-		LOG_W("rcv ERROR syring move to:%d", current_position - motor_route_in_pulse(motor_id, pos));
+		LOG_W("rcv ERROR current pos:%d, motor_route:%d", current_position, motor_route_in_pulse(motor_id, pos));
+		pmc_motor_absolute_position(station_addr, motor_id, 0);
 		return 0;
 	}
 
