@@ -134,9 +134,11 @@ extern uint16_t usSRegHoldBuf[S_REG_HOLDING_NREGS];
 void alarm_control(uint8_t state, uint32_t ticks)
 {
 	if (state) {
+		rt_pin_write(BEEP, 1);
 		rt_timer_start(alarm_timer);
 		rt_timer_control(alarm_timer, RT_TIMER_CTRL_SET_TIME, &ticks);
 	} else {
+		rt_pin_write(BEEP, 0);
 		alarm_count = 0;
 		rt_timer_stop(alarm_timer);
 	}
@@ -190,6 +192,7 @@ void red_alarm_handler(int bit)
 		easyblink_stop(beep);
 	}
 #endif
+	lamp_info.red = bit;
 	if (bit) {
 		rt_pin_write(RED, 1);
 		alarm_control(1, 500);
@@ -210,6 +213,7 @@ void yellow_alarm_handler(int bit)
 		easyblink_stop(beep);
 	}
 #endif
+	lamp_info.yellow = bit;
 	if (bit) {
 		rt_pin_write(YELLOW, 1);
 		alarm_control(1, 1500);
@@ -230,6 +234,7 @@ void green_alarm_handler(int bit)
 		easyblink_stop(beep);
 	}
 #endif
+	lamp_info.green = bit;
 	if (bit) {
 		rt_pin_write(GREEN, 1);
 		alarm_control(1, 1500);
