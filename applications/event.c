@@ -44,6 +44,12 @@
 #define kSecondsPerMonth (60 * 60 * 24 * 30) // 2592000
 #define kSecondsPerYear (60 * 60 * 24 * 365) // 31536000
 
+#define LED0	GET_PIN(B, 14)
+#define RED	GET_PIN(D, 15)
+#define YELLOW	GET_PIN(D, 13)
+#define GREEN	GET_PIN(D, 14)
+#define BEEP	GET_PIN(C, 2)
+
 struct pmc_pumb {
 	uint32_t modbus_addr;
 	uint32_t pmc_addr;
@@ -106,12 +112,65 @@ void SecondsToYMD_HMS(
 
 static struct rt_thread *event_thread;
 
+#if 1
+static rt_timer_t alarm_timer;
+static int alarm_count = 0;
+#else
 extern ebled_t red;
 extern ebled_t green;
 extern ebled_t yellow;
 extern ebled_t beep;
+#endif
+
+struct lamp {
+	uint8_t red;
+	uint8_t green;
+	uint8_t yellow;
+
+} lamp_info = {0, 0, 0};
 
 extern uint16_t usSRegHoldBuf[S_REG_HOLDING_NREGS];
+
+void alarm_control(uint8_t state, uint32_t ticks)
+{
+	if (state) {
+		rt_pin_write(BEEP, 1);
+		rt_timer_start(alarm_timer);
+		rt_timer_control(alarm_timer, RT_TIMER_CTRL_SET_TIME, &ticks);
+	} else {
+		rt_pin_write(BEEP, 0);
+		alarm_count = 0;
+		rt_timer_stop(alarm_timer);
+	}
+}
+static void alarm_timer_handler(void *parameter)
+{
+	static uint8_t state = 0;
+	if (alarm_count == 0) {
+		state = 0;
+	}
+	rt_pin_write(BEEP, state);
+	if (lamp_info.red) {
+		rt_pin_write(RED, state);
+	}
+	if (lamp_info.green && !lamp_info.red && !lamp_info.yellow) {
+		rt_pin_write(GREEN, state);
+	}
+	if (lamp_info.yellow) {
+		rt_pin_write(YELLOW, state);
+	}
+
+	state = !state;
+	alarm_count++;
+	if (alarm_count > 20) {
+		rt_timer_stop(alarm_timer);
+		rt_pin_write(BEEP, 0);
+		lamp_info.red = 0;
+		lamp_info.yellow = 0;
+		lamp_info.green = 0;
+		alarm_count = 0;
+	}
+}
 
 struct pmc_pumb *get_pmc_pumb_struct(uint32_t md_addr)
 {
@@ -124,6 +183,7 @@ struct pmc_pumb *get_pmc_pumb_struct(uint32_t md_addr)
 
 void red_alarm_handler(int bit)
 {
+#if 0
 	if (bit) {
 		easyblink(red, 16, 500, 1000);
 		easyblink(beep, 16, 500, 1000);
@@ -131,10 +191,20 @@ void red_alarm_handler(int bit)
 		easyblink_stop(red);
 		easyblink_stop(beep);
 	}
+#endif
+	lamp_info.red = bit;
+	if (bit) {
+		rt_pin_write(RED, 1);
+		alarm_control(1, 500);
+	} else {
+		rt_pin_write(RED, 0);
+		alarm_control(0, 500);
+	}
 }
 
 void yellow_alarm_handler(int bit)
 {
+#if 0
 	if (bit) {
 		easyblink(yellow, 16, 1500, 3000);
 		easyblink(beep, 16, 1500, 3000);
@@ -142,16 +212,35 @@ void yellow_alarm_handler(int bit)
 		easyblink_stop(yellow);
 		easyblink_stop(beep);
 	}
+#endif
+	lamp_info.yellow = bit;
+	if (bit) {
+		rt_pin_write(YELLOW, 1);
+		alarm_control(1, 1500);
+	} else {
+		rt_pin_write(YELLOW, 0);
+		alarm_control(0, 1500);
+	}
 }
 
 void green_alarm_handler(int bit)
 {
+#if 0
 	if (bit) {
 		easyblink(green, 16, 1500, 3000);
 		easyblink(beep, 16, 1500, 3000);
 	} else {
 		easyblink_stop(green);
 		easyblink_stop(beep);
+	}
+#endif
+	lamp_info.green = bit;
+	if (bit) {
+		rt_pin_write(GREEN, 1);
+		alarm_control(1, 1500);
+	} else {
+		rt_pin_write(GREEN, 0);
+		alarm_control(0, 1500);
 	}
 }
 
@@ -578,6 +667,8 @@ static void event_thread_entry(void *parameter)
 rt_err_t event_init(void)
 {
 	rt_err_t ret = RT_EOK;
+
+	alarm_timer = rt_timer_create("alarm", alarm_timer_handler, RT_NULL, 10, RT_TIMER_CTRL_SET_PERIODIC);
 
 	event_thread = rt_thread_create("event",
 			event_thread_entry,
