@@ -145,7 +145,7 @@ void alarm_control(uint8_t state, uint32_t ticks)
 }
 static void alarm_timer_handler(void *parameter)
 {
-	static uint8_t state = 0;
+	static uint8_t state = 1;
 	if (alarm_count == 0) {
 		state = 0;
 	}
