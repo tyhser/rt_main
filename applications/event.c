@@ -45,10 +45,10 @@
 #define kSecondsPerYear (60 * 60 * 24 * 365) // 31536000
 
 #define LED0	GET_PIN(B, 14)
-#define RED	GET_PIN(D, 15)
+#define RED	GET_PIN(D, 12)
 #define YELLOW	GET_PIN(D, 13)
-#define GREEN	GET_PIN(D, 14)
-#define BEEP	GET_PIN(C, 2)
+#define GREEN	GET_PIN(D, 15)
+#define BEEP	GET_PIN(A, 1)
 
 struct pmc_pumb {
 	uint32_t modbus_addr;
