@@ -49,8 +49,8 @@ extern ebled_t led0;
 #define REG_MOTOR4_POSITION_INDEX	28
 
 #define REG_SLAVE_AXIS_ONLINE		(usSRegInBuf[4])
-#define BREAK_OPEN			set_valve(31, 1)
-#define BREAK_CLOSE			set_valve(31, 0)
+#define BREAK_OPEN			set_valve(22, 1)
+#define BREAK_CLOSE			set_valve(22, 0)
 
 #define MODBUS_SET_INT32_TO_INT16(index, value) \
     do { \

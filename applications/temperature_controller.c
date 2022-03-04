@@ -17,11 +17,11 @@ extern uint16_t usSRegInBuf[S_REG_INPUT_NREGS];
 #define REG_TEMPERATURE_L (usSRegInBuf[20])
 #define REG_TEMPERATURE_H (usSRegInBuf[21])
 
-#define COOLER_ON set_valve(24, 1)
-#define COOLER_OFF set_valve(24, 0)
+#define COOLER_ON set_valve(21, 1)
+#define COOLER_OFF set_valve(21, 0)
 
 rt_thread_t temperature_control_thread = NULL;
-int temperature_control_enable = 1;
+int temperature_control_enable = 0;
 
 void modbus_set_float(float f, uint16_t *dest)
 {
