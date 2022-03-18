@@ -55,7 +55,7 @@ void temperature_contro_entry(void *parameter)
 			else
 				COOLER_OFF;
 		}
-		rt_thread_mdelay(300);
+		rt_thread_mdelay(1500);
 	}
 }
 
