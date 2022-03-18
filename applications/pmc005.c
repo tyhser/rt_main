@@ -868,7 +868,7 @@ int pmc_motor_jog(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 
 void pmc_motor_speed_mode_stop(uint8_t addr, uint8_t id)
 {
-	uint8_t cmd[] = "/1T1R\r";
+	uint8_t cmd[] = "/1T1\r";
 	uint8_t recv[128] = {0};
 
 	cmd[1] = get_hex_ch(addr);
