@@ -19,10 +19,10 @@
 #define Y_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Y_SUB_PULSE * 200 / (Y_LEAD_MM * 10))
 #define Z_AXIS_PULSE(mm_10) (int32_t)(((float)(mm_10)) * Z_SUB_PULSE * 200 / (Z_LEAD_MM * 10))
 #define SYRING_PULSE(ul) (int32_t)((float)(ul) * SYRING_SUB_PULSE * 200 / (SYRING_LEAD_UL))
-#define X_AXIS_LENGTH		3900
+#define X_AXIS_LENGTH		3300
 #define Y_AXIS_LENGTH		1835
-#define Z_AXIS_LENGTH		1055
-#define SYRING_LENGTH		10500
+#define Z_AXIS_LENGTH		1425
+#define SYRING_LENGTH		10300
 #define X_AXIS_PULSE_TO_LEN(pulse) (int32_t)((float)(pulse) * X_LEAD_MM * 10 / (200 * X_SUB_PULSE))
 
 #define ROBOT_ADDR		1
