@@ -694,7 +694,7 @@ void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
 	*(cmd_pos + strlen((char *)cmd_pos)) = '/';
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM4", strlen("aM4"));
-	*(cmd_pos + strlen((char *)cmd_pos)) = 'B';
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'A';
 	sprintf((char *)num_str, "%ld", pos);
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
@@ -794,7 +794,7 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
 	*(cmd_pos + strlen((char *)cmd_pos)) = '1' + motor_id;
-	*(cmd_pos + strlen((char *)cmd_pos)) = 'C';
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'P';
 	sprintf((char *)num_str, "%ld", motor_route_in_pulse(motor_id, pos));
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
@@ -828,7 +828,16 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 
 	if (current_position < motor_route_in_pulse(motor_id, pos)) {
 		LOG_W("rcv ERROR current pos:%d, motor_route:%d", current_position, motor_route_in_pulse(motor_id, pos));
+		if (motor_id == MOTOR_3) {
+			BREAK_OPEN;
+		}
 		pmc_motor_absolute_position(station_addr, motor_id, 0);
+		pmc_block_wait_motor_free(station_addr, motor_id);
+		if (motor_id == MOTOR_3) {
+			BREAK_CLOSE;
+		}
+		current_position = pmc_get_motor_position(motor_id);
+		MODBUS_SET_INT32_TO_INT16(REG_MOTOR1_POSITION_INDEX + 2 * motor_id, current_position);
 		return 0;
 	}
 
@@ -836,7 +845,7 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	*(cmd_pos + strlen((char *)cmd_pos)) = get_hex_ch(station_addr);
 	rt_memcpy(cmd_pos + strlen((char *)cmd_pos), "aM", strlen("aM"));
 	*(cmd_pos + strlen((char *)cmd_pos)) = '1' + motor_id;
-	*(cmd_pos + strlen((char *)cmd_pos)) = 'E';
+	*(cmd_pos + strlen((char *)cmd_pos)) = 'D';
 	sprintf((char *)num_str, "%ld", motor_route_in_pulse(motor_id, pos));
 	rt_memcpy(cmd_pos + strlen((char *)cmd), num_str, strlen((char *)num_str));
 	*(cmd_pos + strlen((char *)cmd_pos)) = 'R';
