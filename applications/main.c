@@ -68,13 +68,16 @@ int main(void)
 	event_init();
 	valve_init();
 	pc_on_off();
-	pmc_init();
 	rt_kprintf("application version: "GIT_DESC"\n");
 	sw_input_init();
 	DAC121S101_Init();
 
 	DAC121S101_WriteDAC(0, PD_OPERATION_NORMAL, 0);
 	DAC121S101_WriteDAC(1, PD_OPERATION_NORMAL, 0);
+
+	/*PMC005 need time to startup avoid enter bootload*/
+	rt_thread_mdelay(300);
+	pmc_init();
 	while (1) {
 		if(!__EASYBLINK_IS_FLAG(led0, PKG_EASYBLINK_ACTIVE))
 			easyblink(led0, -1, 500, 1000);
