@@ -965,7 +965,8 @@ void PMC(int argc, char *argv[])
 	rt_memcpy(&cmd[0], &argv[1][0], strlen((char *)argv[1]) + 1);
 	cmd[strlen((char *)argv[1])] = '\r';
 	recv_len  = pmc_send_then_recv(cmd, strlen((char *)cmd), buf, 128);
-	LOG_HEX("pmc recv", 16, buf, recv_len);
+	if (recv_len > 0)
+		LOG_HEX("pmc recv", 16, buf, recv_len);
 	rt_memset(buf, 0, 256);
 }
 MSH_CMD_EXPORT(PMC, test pmc);
