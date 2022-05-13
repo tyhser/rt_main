@@ -50,6 +50,8 @@ void motor_server_post(enum motor_ser_id id, motor_server_param_t *param)
 	}
 }
 
+void set_robot_busy(enum axis_id id);
+
 void motor_server_process(motor_ser_event_t event)
 {
 	motor_server_param_t param = {0};
@@ -57,24 +59,34 @@ void motor_server_process(motor_ser_event_t event)
 
 	switch (event->id) {
 	case XY_ABS:
+		set_robot_busy(XY_AXIS);
 		pmc_motor_xy_abs(param.xy_abs.station_addr, param.xy_abs.x, param.xy_abs.y);
 	break;
 	case Z_ABS:
+		set_robot_busy(Z_AXIS);
 		pmc_motor_z_abs(param.motor_move.station_addr, param.motor_move.pos);
 	break;
 	case SYRING_ABS:
+		set_robot_busy(SYRING);
 		pmc_motor_syring_abs(param.motor_move.station_addr, param.motor_move.pos);
 	break;
 	case STOP_ALL:
 		pmc_stop(param.motor_move.station_addr);
 	break;
 	case MOTOR_JOG:
+		set_robot_busy(XY_AXIS);
+		set_robot_busy(Z_AXIS);
+		set_robot_busy(SYRING);
 		pmc_motor_jog(param.motor_move.station_addr, param.motor_move.motor_id, param.motor_move.pos);
 	break;
 	case MOTOR_HOME:
+		set_robot_busy(XY_AXIS);
+		set_robot_busy(Z_AXIS);
+		set_robot_busy(SYRING);
 		pmc_motor_home(param.motor_move.station_addr, param.motor_move.motor_id);
 	break;
 	case SYRING_PP:
+		set_robot_busy(SYRING);
 		pmc_robot_syring_pp(param.motor_move.station_addr, param.motor_move.pos);
 		break;
 	default:
@@ -105,7 +117,7 @@ int motor_ser_init(void)
 {
 	m_ser_queue = rt_mq_create("m_ser_q",
 			sizeof(struct motor_ser_event),
-			64, RT_IPC_FLAG_FIFO);
+			640, RT_IPC_FLAG_FIFO);
 
 	if (m_ser_queue == NULL)
 		rt_kprintf("init motor server queue failed.\n");
