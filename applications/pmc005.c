@@ -283,6 +283,25 @@ void pmc_mb_set_motor_state(enum motor_id id, enum motor_status state)
 	}
 }
 
+void set_robot_busy(enum axis_id id)
+{
+	rt_enter_critical();
+	switch (id) {
+	case XY_AXIS:
+		REG_XY_AXIS_STATE = MOTOR_BUSY;
+	break;
+	case Z_AXIS:
+		REG_Z_AXIS_STATE = MOTOR_BUSY;
+	break;
+	case SYRING:
+		REG_SYRING_STATE = MOTOR_BUSY;
+	break;
+	default:
+	break;
+	}
+	rt_exit_critical();
+}
+
 void pmc_update_motor_state(struct response_info *info)
 {
 	uint8_t busy_state = info->data[0] - '0';
@@ -340,11 +359,21 @@ void pmc_robot_init(uint8_t station_addr)
 #if MBP
 	uint8_t cmd[] = "/1n3aM3Z60000aM1j32m120L30h50V4000Z60000V16000aM2j2m120V20000D25000z0aM4m100L1000V64000Z50000R\r";
 #else
-	uint8_t cmd[] = "/1n3aM3f2j16m120L120h50V16000Z60000V64000aM1f2j16m120L100h20V16000Z120000V64000aM2f2j16m120L110h20V16000Z100000V64000aM4f0j16m125L900V30000Z120000R\r";
+	uint8_t cmd[] = "/1n3aM3f2j16m120L120h50V16000Z60000V64000aM1f2j16m120L100h20V8000Z120000V64000aM2f2j16m120L110h20V8000Z100000V64000aM4f0j16m125L900V30000Z120000R\r";
 #endif
 	uint8_t recv[128] = {0};
 	cmd[1] = get_hex_ch(station_addr);
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	set_robot_busy(XY_AXIS);
+	set_robot_busy(Z_AXIS);
+	set_robot_busy(SYRING);
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, XY_AXIS) &&
+				!pmc_is_robot_busy(station_addr, Z_AXIS) &&
+				!pmc_is_robot_busy(station_addr, SYRING))
+			break;
+		rt_thread_mdelay(300);
+	}
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, XY_AXIS) &&
 				!pmc_is_robot_busy(station_addr, Z_AXIS) &&
@@ -421,6 +450,11 @@ int pmc_is_robot_busy(uint8_t station_addr, enum axis_id id)
 
 void pmc_block_wait_motor_free(uint8_t station_addr, enum motor_id id)
 {
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_motor_busy(station_addr, id))
+			break;
+		rt_thread_mdelay(300);
+	}
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_motor_busy(station_addr, id))
 			break;
@@ -546,6 +580,10 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 	cmd[1] = get_hex_ch(station_addr);
 	cmd[4] = (uint8_t)(1 + id + '0');
 	ret = pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	set_robot_busy(XY_AXIS);
+	set_robot_busy(Z_AXIS);
+	set_robot_busy(SYRING);
+
 	if (ret == 0)
 		pmc_mb_set_motor_state(id, MOTOR_ERROR);
 
@@ -632,7 +670,12 @@ void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
-
+	set_robot_busy(XY_AXIS);
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, XY_AXIS))
+			break;
+		rt_thread_mdelay(300);
+	}
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, XY_AXIS))
 			break;
@@ -671,6 +714,12 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
 
+	set_robot_busy(Z_AXIS);
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, Z_AXIS))
+			break;
+		rt_thread_mdelay(300);
+	}
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, Z_AXIS))
 			break;
@@ -703,6 +752,12 @@ void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
 
+	set_robot_busy(SYRING);
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, SYRING))
+			break;
+		rt_thread_mdelay(300);
+	}
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, SYRING))
 			break;
@@ -744,6 +799,12 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
 
+	set_robot_busy(SYRING);
+	for (int i = 0; i < 100; i++) {
+		if (!pmc_is_robot_busy(station_addr, SYRING))
+			break;
+		rt_thread_mdelay(300);
+	}
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, SYRING))
 			break;
@@ -805,6 +866,10 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 		BREAK_OPEN;
 	}
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+
+	set_robot_busy(XY_AXIS);
+	set_robot_busy(Z_AXIS);
+	set_robot_busy(SYRING);
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	if (motor_id == MOTOR_3) {
 		BREAK_CLOSE;
@@ -855,6 +920,9 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 		BREAK_OPEN;
 	}
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
+	set_robot_busy(XY_AXIS);
+	set_robot_busy(Z_AXIS);
+	set_robot_busy(SYRING);
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	if (motor_id == MOTOR_3) {
 		BREAK_CLOSE;
