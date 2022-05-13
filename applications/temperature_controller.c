@@ -41,7 +41,7 @@ void temperature_contro_entry(void *parameter)
 {
 	float temp = 0;
 
-	COOLER_ON;
+	COOLER_OFF;
 	while (1) {
 		temp = electrode_get_temperature();
 		//LOG_I("temperature:%0.3f", temp);
