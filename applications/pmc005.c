@@ -584,6 +584,7 @@ void pmc_motor_home(uint8_t station_addr, enum motor_id id)
 	set_robot_busy(Z_AXIS);
 	set_robot_busy(SYRING);
 
+	rt_thread_mdelay(400);
 	if (ret == 0)
 		pmc_mb_set_motor_state(id, MOTOR_ERROR);
 
@@ -671,6 +672,8 @@ void pmc_motor_xy_abs(uint8_t station_addr, int32_t x, int32_t y)
 	pmc_send_then_recv(cmd, strlen((char *)cmd), recv, 128);
 	pmc_get_response_info(&info, recv, 128);
 	set_robot_busy(XY_AXIS);
+
+	rt_thread_mdelay(400);
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, XY_AXIS))
 			break;
@@ -715,6 +718,8 @@ void pmc_motor_z_abs(uint8_t station_addr, int32_t pos)
 	pmc_get_response_info(&info, recv, 128);
 
 	set_robot_busy(Z_AXIS);
+
+	rt_thread_mdelay(400);
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, Z_AXIS))
 			break;
@@ -753,6 +758,7 @@ void pmc_motor_syring_abs(uint8_t station_addr, int32_t pos)
 	pmc_get_response_info(&info, recv, 128);
 
 	set_robot_busy(SYRING);
+	rt_thread_mdelay(400);
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, SYRING))
 			break;
@@ -800,6 +806,7 @@ void pmc_robot_syring_pp(uint8_t station_addr, uint16_t times)
 	pmc_get_response_info(&info, recv, 128);
 
 	set_robot_busy(SYRING);
+	rt_thread_mdelay(400);
 	for (int i = 0; i < 100; i++) {
 		if (!pmc_is_robot_busy(station_addr, SYRING))
 			break;
@@ -870,6 +877,7 @@ int pmc_motor_fwd(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	set_robot_busy(XY_AXIS);
 	set_robot_busy(Z_AXIS);
 	set_robot_busy(SYRING);
+	rt_thread_mdelay(400);
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	if (motor_id == MOTOR_3) {
 		BREAK_CLOSE;
@@ -923,6 +931,7 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 	set_robot_busy(XY_AXIS);
 	set_robot_busy(Z_AXIS);
 	set_robot_busy(SYRING);
+	rt_thread_mdelay(400);
 	pmc_block_wait_motor_free(station_addr, motor_id);
 	if (motor_id == MOTOR_3) {
 		BREAK_CLOSE;

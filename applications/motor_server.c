@@ -44,7 +44,7 @@ void motor_server_post(enum motor_ser_id id, motor_server_param_t *param)
 	event.post_callback = NULL;
 	rt_memcpy(&event.parameters, param, sizeof(*param));
 
-	result = rt_mq_send_wait(m_ser_queue, &event, sizeof(event), RT_WAITING_FOREVER);
+	result = rt_mq_send(m_ser_queue, &event, sizeof(event));
 	if (result != RT_EOK) {
 		LOG_E("motor server post failed");
 	}
@@ -117,7 +117,7 @@ int motor_ser_init(void)
 {
 	m_ser_queue = rt_mq_create("m_ser_q",
 			sizeof(struct motor_ser_event),
-			640, RT_IPC_FLAG_FIFO);
+			8, RT_IPC_FLAG_FIFO);
 
 	if (m_ser_queue == NULL)
 		rt_kprintf("init motor server queue failed.\n");
