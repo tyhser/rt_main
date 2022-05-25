@@ -40,7 +40,7 @@ struct rt_mailbox modbus_ind_mailbox;
 static char mailbox_pool[128];
 
 ALIGN(RT_ALIGN_SIZE)
-static char modbus_poll_thread_stack[1024];
+static char modbus_poll_thread_stack[2048];
 static struct rt_thread modbus_poll_thread;
 
 static void mb_slave_poll(void *parameter)

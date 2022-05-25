@@ -17,7 +17,7 @@ static rt_mq_t mq;
 
 void md_event_init(void)
 {
-	mq = rt_mq_create("md_mqt", sizeof(struct md_event), 8, RT_IPC_FLAG_FIFO);
+	mq = rt_mq_create("md_mqt", sizeof(struct md_event), 40, RT_IPC_FLAG_FIFO);
 
 	if (mq == NULL)
 		rt_kprintf("init message queue failed.\n");
@@ -42,10 +42,10 @@ int md_event_send(enum md_rw rw, enum md_cmd_type reg_type, uint32_t start_addr,
 		}
 	}
 
-	result = rt_mq_send(mq, &msg, sizeof(msg));
+	result = rt_mq_send_wait(mq, &msg, sizeof(msg), 1);
 	if (result != RT_EOK) {
 		LOG_E("md event send ERR");
-		easyblink(led0, -1, 200, 400);
+		//easyblink(led0, -1, 200, 400);
 	}
 	return result;
 }
