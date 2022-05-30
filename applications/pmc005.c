@@ -943,8 +943,10 @@ int pmc_motor_rev(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 
 int pmc_motor_jog(uint8_t station_addr, uint8_t motor_id, int32_t pos)
 {
-	if (pos == 0)
+	if (pos == 0) {
+		pmc_block_wait_motor_free(station_addr, motor_id);
 		return 0;
+	}
 	if (pos > 0)
 		pmc_motor_fwd(station_addr, motor_id, pos);
 	else
