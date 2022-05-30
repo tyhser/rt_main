@@ -458,12 +458,12 @@ void md_hold_reg_write_handle(struct md_event *event)
 			motor_server_z_abs(0);
 
 			param.motor_move.station_addr = ROBOT_ADDR;
-			param.motor_move.pos = -1 * X_AXIS_PULSE(REG_VALUE(HOLD_REG_X_AXIS));
+			param.motor_move.pos = -1 * REG_VALUE(HOLD_REG_X_AXIS);
 			param.motor_move.motor_id = MOTOR_1;
 			motor_server_post(MOTOR_JOG, &param);
 
 			param.motor_move.station_addr = ROBOT_ADDR;
-			param.motor_move.pos = -1 * Y_AXIS_PULSE(REG_VALUE(HOLD_REG_Y_AXIS));
+			param.motor_move.pos = -1 * REG_VALUE(HOLD_REG_Y_AXIS);
 			param.motor_move.motor_id = MOTOR_2;
 			motor_server_post(MOTOR_JOG, &param);
 
