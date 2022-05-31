@@ -62,8 +62,8 @@ int sw_input_map[] = {
 	[5] = GET_PIN(E, 3),
 	[6] = GET_PIN(E, 2),
 	[7] = GET_PIN(E, 1),
-	[8] = GET_PIN(E, 0),
-	[9] = GET_PIN(B, 9),
+//	[8] = GET_PIN(E, 0),
+//	[9] = GET_PIN(B, 9),
 };
 
 void valve_init(void)
